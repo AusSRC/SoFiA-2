@@ -1,0 +1,13 @@
+# Steps to compile up the swig wrapper:
+
+swig -python sofia.i
+
+gcc -fPIC --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -c src/common.c src/statistics_flt.c src/statistics_dbl.c src/Table.c src/String.c src/Stack.c src/Path.c src/Array_dbl.c src/Array_siz.c src/Map.c src/Matrix.c src/LinkerPar.c src/Parameter.c src/Source.c src/Catalog.c src/Flagger.c src/WCS.c src/Header.c src/DataCube.c sofia.c sofia_wrap.c -fopenmp -I/usr/include/python3.8 -I ~/.local/lib/python3.8/site-packages/numpy/core/include
+
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -shared *.o -fopenmp -lm -lwcs -o _sofia.so
+
+# use in Python:
+
+import sofia
+
+

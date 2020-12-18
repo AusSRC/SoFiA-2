@@ -42,6 +42,7 @@
 #endif
 
 #include "DataCube.h"
+#include "Table.h"
 #include "Source.h"
 #include "statistics_flt.h"
 #include "statistics_dbl.h"
@@ -94,6 +95,7 @@ CLASS DataCube
 	size_t  dimension;
 	size_t  axis_size[4];
 	bool    verbosity;
+	SOURCETYPE DATATYPE;
 };
 
 
@@ -136,6 +138,7 @@ PUBLIC DataCube *DataCube_new(const bool verbosity)
 	self->axis_size[3] = 0;
 	
 	self->verbosity = verbosity;
+	self->DATATYPE = FITS;
 	
 	return self;
 }
@@ -358,6 +361,317 @@ PUBLIC size_t DataCube_get_axis_size(const DataCube *self, const size_t axis)
 	return self == NULL ? 0 : self->axis_size[axis];
 }
 
+///////////////////////////////////////////////////////////////////////////
+//	Helper functions
+//	Author - ger063
+//	Created - 15 Dec 2020
+
+
+typedef struct dict_t_struct {
+    char *key;
+    void *value;
+    struct dict_t_struct *next;
+} dict_t;
+
+dict_t **dictAlloc(void) {
+    return malloc(sizeof(dict_t));
+}
+
+void dictDealloc(dict_t **dict) {
+    free(dict);
+}
+
+void delItem(dict_t **dict, char *key) {
+    dict_t *ptr, *prev;
+    for (ptr = *dict, prev = NULL; ptr != NULL; prev = ptr, ptr = ptr->next) {
+        if (strcmp(ptr->key, key) == 0) {
+            if (ptr->next != NULL) {
+                if (prev == NULL) {
+                    *dict = ptr->next;
+                } else {
+                    prev->next = ptr->next;
+                }
+            } else if (prev != NULL) {
+                prev->next = NULL;
+            } else {
+                *dict = NULL;
+            }
+
+            free(ptr->key);
+            free(ptr);
+
+            return;
+        }
+    }
+}
+
+
+void *getDictVal(dict_t *dict, char *key) {
+    dict_t *ptr;
+    for (ptr = dict; ptr != NULL; ptr = ptr->next) {
+        if (strcmp(ptr->key, key) == 0) {
+            return ptr->value;
+        }
+    }
+
+    return NULL;
+}
+
+void add2dict(dict_t **dict, char *key, void *value) {
+    delItem(dict, key); /* If we already have a item with this key, delete it. */
+    dict_t *d = malloc(sizeof(struct dict_t_struct));
+    d->key = malloc(strlen(key)+1);
+    strcpy(d->key, key);
+    d->value = value;
+    d->next = *dict;
+    *dict = d;
+}
+
+
+// Read data cube from memory arrays                                 //
+// ----------------------------------------------------------------- //
+// Arguments:                                                        //
+//                                                                   //
+//   (1) self     - Object self-reference.                           //
+//   (2) dataPtr - Pointer to flattened array of floats              //
+//   (3) header   - header obj
+//                                                                   //
+// Return value:                                                     //
+//                                                                   //
+//   No return value.                                                //
+//                                                                   //
+// Description:                                                      //
+//                                                                   //
+//   Public method for reading a data cube from an array in memory.  //
+//	 The array is expected to represent 3D or 4D data dimensions     //
+//   - as long as the 4th axis is of size 1 (e.g. Stokes I).         //
+//   A region can be specified, to read only a portion of the image. //
+//   The region must be of the form x_min, x_max, y_min, y_max,      //
+//   z_min, z_max. If NULL, the full cube will be read in.           //
+//                                                                   //
+//   Author - ger063                                                 //
+//   Created - 15 Dec 2020                                           //
+// ----------------------------------------------------------------- //
+PUBLIC void DataCube_readMEM(DataCube *self, double *dataPtr)
+{
+	// Sanity checks
+	check_null(self);
+	check_null(dataPtr);
+	//check_null(header);
+	self->DATATYPE = MEM;
+
+	// Create Header object and de-allocate memory again
+
+	FILE *fp = fopen("sofia_test_datacube.fits", "rb");
+	ensure(fp != NULL, ERR_FILE_ACCESS, "Failed to open FITS file \'%s\'.", "sofia_test_datacube.fits");
+	// Read entire header into temporary array
+	char *header = NULL;
+	size_t header_size = 0;
+	bool end_reached = false;
+
+	while(!end_reached)
+	{
+		// (Re-)allocate memory as needed
+		header = (char *)memory_realloc(header, header_size + FITS_HEADER_BLOCK_SIZE, sizeof(char));
+
+		// Read header block
+		ensure(fread(header + header_size, 1, FITS_HEADER_BLOCK_SIZE, fp) == FITS_HEADER_BLOCK_SIZE, ERR_FILE_ACCESS, "FITS file ended unexpectedly while reading header.");
+
+		// Check if we have reached the end of the header
+		char *ptr = header + header_size;
+
+		while(!end_reached && ptr < header + header_size + FITS_HEADER_BLOCK_SIZE)
+		{
+			if(strncmp(ptr, "END", 3) == 0) end_reached = true;
+			else ptr += FITS_HEADER_LINE_SIZE;
+		}
+
+		// Set header size parameter
+		header_size += FITS_HEADER_BLOCK_SIZE;
+	}
+
+	self->header = Header_new(header, header_size, self->verbosity);
+	free(header);
+	// Extract crucial header elements
+	self->data_type    = Header_get_int(self->header, "BITPIX");
+	self->dimension    = Header_get_int(self->header, "NAXIS");
+	self->axis_size[0] = Header_get_int(self->header, "NAXIS1");
+	self->axis_size[1] = Header_get_int(self->header, "NAXIS2");
+	self->axis_size[2] = Header_get_int(self->header, "NAXIS3");
+	self->axis_size[3] = Header_get_int(self->header, "NAXIS4");
+	self->word_size    = abs(self->data_type) / 8;             // WARNING: Assumes 8 bits per char; see CHAR_BIT in limits.h.
+
+	self->data_size    = self->axis_size[0];
+	for(size_t i = 1; i < self->dimension; ++i) self->data_size *= self->axis_size[i];
+	// Sanity checks
+	ensure(self->data_type == -64
+		|| self->data_type == -32
+		|| self->data_type == 8
+		|| self->data_type == 16
+		|| self->data_type == 32
+		|| self->data_type == 64,
+		ERR_USER_INPUT, "Invalid BITPIX keyword encountered.");
+
+	ensure(self->dimension > 0
+		&& self->dimension < 5,
+		ERR_USER_INPUT, "Only FITS files with 1-4 dimensions are supported.");
+
+	ensure(self->dimension < 4
+		|| self->axis_size[3] == 1
+		|| self->axis_size[2] == 1,
+		ERR_USER_INPUT, "The size of the 3rd or 4th axis must be 1.");
+
+	ensure(self->data_size > 0,
+		ERR_USER_INPUT, "Invalid NAXISn keyword encountered.");
+
+	if(self->dimension < 3) self->axis_size[2] = 1;
+	if(self->dimension < 2) self->axis_size[1] = 1;
+
+	// Swap third and fourth axis header keywords if necessary
+	if(self->dimension == 4 && self->axis_size[2] == 1 && self->axis_size[3] > 1)
+	{
+		warning("Swapping order of 3rd and 4th axis of 4D cube.");
+
+		double tmp;
+		size_t tmp2;
+		String *str3, *str4;
+
+		tmp2 = self->axis_size[2];
+		self->axis_size[2] = self->axis_size[3];
+		self->axis_size[3] = tmp2;
+
+		Header_set_int(self->header, "NAXIS3", Header_get_int(self->header, "NAXIS4"));
+		Header_set_int(self->header, "NAXIS4", 1);
+
+		tmp = Header_get_flt(self->header, "CRPIX3");
+		Header_set_flt(self->header, "CRPIX3", Header_get_flt(self->header, "CRPIX4"));
+		Header_set_flt(self->header, "CRPIX4", tmp);
+
+		tmp = Header_get_flt(self->header, "CRVAL3");
+		Header_set_flt(self->header, "CRVAL3", Header_get_flt(self->header, "CRVAL4"));
+		Header_set_flt(self->header, "CRVAL4", tmp);
+
+		tmp = Header_get_flt(self->header, "CDELT3");
+		Header_set_flt(self->header, "CDELT3", Header_get_flt(self->header, "CDELT4"));
+		Header_set_flt(self->header, "CDELT4", tmp);
+
+		str3 = Header_get_string(self->header, "CTYPE3");
+		str4 = Header_get_string(self->header, "CTYPE4");
+		Header_set_str(self->header, "CTYPE3", String_get(str4));
+		Header_set_str(self->header, "CTYPE4", String_get(str3));
+		String_delete(str3);
+		String_delete(str4);
+
+		str3 = Header_get_string(self->header, "CUNIT3");
+		str4 = Header_get_string(self->header, "CUNIT4");
+		Header_set_str(self->header, "CUNIT3", String_get(str4));
+		Header_set_str(self->header, "CUNIT4", String_get(str3));
+		String_delete(str3);
+		String_delete(str4);
+	}
+
+	// Work out data size
+	const size_t x_min =  0;
+	const size_t x_max =  self->axis_size[0] - 1;
+	const size_t y_min =  0;
+	const size_t y_max =  self->axis_size[1] - 1;
+	const size_t z_min =  0;
+	const size_t z_max =  self->axis_size[2] - 1;
+	const size_t data_nx = x_max - x_min + 1;
+	const size_t data_ny = y_max - y_min + 1;
+	const size_t data_nz = z_max - z_min + 1;
+	const size_t data_size = data_nx * data_ny * data_nz;  // this is the data array size
+
+	// Print status information
+	message("Reading DataCube data with the following specifications:");
+	message("  Data type:    %d", self->data_type);
+	message("  No. of axes:  %zu", self->dimension);
+	message("  Axis sizes:   %zu, %zu, %zu", self->axis_size[0], self->axis_size[1], self->axis_size[2]);
+	message("  Region:       %zu-%zu, %zu-%zu, %zu-%zu", x_min, x_max, y_min, y_max, z_min, z_max);
+	message("  Memory used:  %.1f MB", (double)(data_size * self->word_size) / MEGABYTE);
+
+	// Store pointer to data array
+	self->data = dataPtr;
+
+	// Update object properties
+	self->data_size = data_size;
+	self->axis_size[0] = data_nx;
+	self->axis_size[1] = data_ny;
+	self->axis_size[2] = data_nz;
+
+	// Adjust WCS information in header
+	Header_adjust_wcs_to_subregion(self->header, x_min, x_max, y_min, y_max, z_min, z_max);
+
+	// Swap byte order if required
+	DataCube_swap_byte_order(self);
+
+	// Handle BSCALE and BZERO if necessary
+	const double bscale = Header_get_flt(self->header, "BSCALE");
+	const double bzero  = Header_get_flt(self->header, "BZERO");
+
+	if((IS_NOT_NAN(bscale) && bscale != 1.0) || (IS_NOT_NAN(bzero) && bzero != 0.0))
+	{
+		// Scaling required
+		if(self->data_type < 0.0)
+		{
+			// Floating-point data; simply print warning...
+			warning("Applying non-trivial BSCALE and BZERO to floating-point data.");
+
+			// ...and scale data
+			if(bscale != 1.0) DataCube_multiply_const(self, bscale);
+			if(bzero  != 0.0) DataCube_add_const(self, bzero);
+
+			// Update header
+			Header_remove(self->header, "BSCALE");
+			Header_remove(self->header, "BZERO");
+		}
+		else
+		{
+			// Integer data; conversion to 32-bit floating-point data required
+			warning("Applying non-trivial BSCALE and BZERO to integer data\n         and converting to 32-bit floating-point type.");
+
+			// Create 32-bit array
+			float *data_copy = (float *)memory(MALLOC, self->axis_size[0] * self->axis_size[1] * self->axis_size[2], sizeof(float));
+			float *ptr = data_copy;
+
+			// Check for blanking value
+			const bool blanking_required = (Header_check(self->header, "BLANK") > 0);
+			const long int blanking_value = blanking_required ? Header_get_int(self->header, "BLANK") : 0;
+			long int value;
+
+			// Copy scaled data over
+			for(size_t z = 0; z < self->axis_size[2]; ++z)
+			{
+				for(size_t y = 0; y < self->axis_size[1]; ++y)
+				{
+					for(size_t x = 0; x < self->axis_size[0]; ++x)
+					{
+						value = DataCube_get_data_int(self, x, y, z);
+						if(blanking_required && blanking_value == value) *ptr = NAN;
+						else *ptr = bzero + bscale * value;
+						++ptr;
+					}
+				}
+			}
+
+			// Delete original array and point to new copy instead
+			free(self->data);
+			self->data = (char *)data_copy;
+
+			// Update header
+			Header_set_int(self->header, "BITPIX", -32);
+			Header_remove(self->header, "BSCALE");
+			Header_remove(self->header, "BZERO");
+			Header_remove(self->header, "BLANK");
+
+			// Update object properties
+			self->data_type = -32;
+			self->word_size = 4;
+		}
+	}
+
+	return;
+}
 
 
 // ----------------------------------------------------------------- //
@@ -386,26 +700,18 @@ PUBLIC size_t DataCube_get_axis_size(const DataCube *self, const size_t axis)
 //   x_max, y_min, y_max, z_min, z_max. If NULL, the full cube will  //
 //   be read in.                                                     //
 // ----------------------------------------------------------------- //
-
-PUBLIC void DataCube_load(DataCube *self, const char *filename, const Array_siz *region)
+PUBLIC void DataCube_readFITS(DataCube *self, const char *filename, const Array_siz *region)
 {
 	// Sanity checks
 	check_null(self);
 	check_null(filename);
-	ensure(strlen(filename), ERR_USER_INPUT, "Empty file name provided.");
-	
-	// Check region specification
-	if(region != NULL)
-	{
-		ensure(Array_siz_get_size(region) == 6, ERR_USER_INPUT, "Invalid region supplied; must contain 6 values.");
-		for(size_t i = 0; i < Array_siz_get_size(region); i += 2) ensure(Array_siz_get(region, i) <= Array_siz_get(region, i + 1), ERR_USER_INPUT, "Invalid region supplied; minimum greater than maximum.");
-	}
-	
+	ensure(strlen(filename), ERR_USER_INPUT, "Empty data source name provided.");
+
 	// Open FITS file
 	message("Opening FITS file \'%s\'.", filename);
 	FILE *fp = fopen(filename, "rb");
 	ensure(fp != NULL, ERR_FILE_ACCESS, "Failed to open FITS file \'%s\'.", filename);
-		
+	self->DATATYPE = FITS;
 	// Read entire header into temporary array
 	char *header = NULL;
 	size_t header_size = 0;
@@ -449,6 +755,7 @@ PUBLIC void DataCube_load(DataCube *self, const char *filename, const Array_siz 
 	self->word_size    = abs(self->data_type) / 8;             // WARNING: Assumes 8 bits per char; see CHAR_BIT in limits.h.
 	self->data_size    = self->axis_size[0];
 	for(size_t i = 1; i < self->dimension; ++i) self->data_size *= self->axis_size[i];
+	status("In DataCube_readFITS - size %d", header_size);
 	
 	// Sanity checks
 	ensure(self->data_type == -64
@@ -670,7 +977,6 @@ PUBLIC void DataCube_load(DataCube *self, const char *filename, const Array_siz 
 	
 	return;
 }
-
 
 
 // ----------------------------------------------------------------- //
@@ -1725,10 +2031,14 @@ PUBLIC DataCube *DataCube_scale_noise_local(DataCube *self, const noise_stat sta
 					{
 						for(size_t xx = window[0]; xx <= window[1]; ++xx)
 						{
-							array[counter++] = DataCube_get_data_flt(self, xx, yy, zz);
+							const double value = DataCube_get_data_flt(self, xx, yy, zz);
+							if(IS_NOT_NAN(value)) array[counter++] = value;
 						}
 					}
 				}
+				
+				// Move on if no finite values found
+				if(counter == 0) continue;
 				
 				// Determine noise level in temporary array
 				double rms;
@@ -1776,6 +2086,8 @@ PUBLIC DataCube *DataCube_scale_noise_local(DataCube *self, const noise_stat sta
 						const double s0 = DataCube_get_data_flt(noiseCube, x, y, z0);
 						const double s2 = DataCube_get_data_flt(noiseCube, x, y, z2);
 						
+						if(IS_NAN(s0) || IS_NAN(s2)) continue;
+						
 						for(size_t i = 1; i < grid_spec; ++i)
 						{
 							const size_t z1 = z0 + i;
@@ -1807,6 +2119,8 @@ PUBLIC DataCube *DataCube_scale_noise_local(DataCube *self, const noise_stat sta
 						const double s0 = DataCube_get_data_flt(noiseCube, x, y0, z);
 						const double s2 = DataCube_get_data_flt(noiseCube, x, y2, z);
 						
+						if(IS_NAN(s0) || IS_NAN(s2)) continue;
+						
 						for(size_t i = 1; i < grid_spat; ++i)
 						{
 							const size_t y1 = y0 + i;
@@ -1824,6 +2138,8 @@ PUBLIC DataCube *DataCube_scale_noise_local(DataCube *self, const noise_stat sta
 						const size_t x2 = x + grid_spat;
 						const double s0 = DataCube_get_data_flt(noiseCube, x0, y, z);
 						const double s2 = DataCube_get_data_flt(noiseCube, x2, y, z);
+						
+						if(IS_NAN(s0) || IS_NAN(s2)) continue;
 						
 						for(size_t i = 1; i < grid_spat; ++i)
 						{
@@ -3468,44 +3784,50 @@ PUBLIC void DataCube_continuum_flagging(DataCube *self, const char *filename, co
 	ensure(self->data_type == -32 || self->data_type == -64, ERR_USER_INPUT, "Data cube must be of floating-point type.");
 	check_null(filename);
 	
-	// Open catalogue file
-	FILE *fp = NULL;
-	ensure((fp = fopen(filename, "r")) != NULL, ERR_FILE_ACCESS, "Failed to read from source catalogue:\n       %s", filename);
-	
 	// Set up a few variables
-	char line[128];
-	double lon = 0.0;
-	double lat  = 0.0;
 	const long int radius2 = radius * radius;
 	const long int axis_size_x = (long int)(self->axis_size[0]);
 	const long int axis_size_y = (long int)(self->axis_size[1]);
 	const long int axis_size_z = (long int)(self->axis_size[2]);
-	size_t counter1 = 0;
-	size_t counter2 = 0;
+	size_t counter = 0;
+	
+	// Read catalogue file
+	Table *cont_cat = Table_from_file(filename, " \t,|");
+	if(Table_rows(cont_cat) == 0 || Table_cols(cont_cat) != 2)
+	{
+		warning("Continuum catalogue non-compliant; must contain 2 data columns.\n         Flagging catalogue file will be ignored.");
+		Table_delete(cont_cat);
+		return;
+	}
 	
 	// Set up WCS if requested
 	WCS *wcs = NULL;
 	if(coord_sys == 1)
 	{
 		wcs = DataCube_extract_wcs(self);
-		ensure(wcs != NULL, ERR_NULL_PTR, "Failed to extract WCS information from header.");
+		if(wcs == NULL)
+		{
+			warning("WCS conversion failed; cannot apply flagging catalogue.");
+			Table_delete(cont_cat);
+			return;
+		}
 	}
 	
-	// Read file line-by-line
-	while(fgets(line, sizeof line, fp) != NULL)
+	// Process catalogue line-by-line
+	for(size_t i = 0; i < Table_rows(cont_cat); ++i)
 	{
-		// Read longitude and latitude from line
-		if(sscanf(line, "%lf %lf", &lon, &lat) != 2) continue;
-		++counter1;
+		// Extract longitude and latitude
+		double lon = -1e+30;
+		double lat = -1e+30;
 		
 		// Convert position from WCS to pixels if needed
-		if(coord_sys == 1) WCS_convertToPixel(wcs, lon, lat, 0.0, &lon, &lat, NULL);
+		if(coord_sys == 1) WCS_convertToPixel(wcs, Table_get(cont_cat, i, 0), Table_get(cont_cat, i, 1), 0.0, &lon, &lat, NULL);
 		
 		// Ensure that source is within cube boundaries
 		const long int pos_x = (long int)(lon + 0.5);
 		const long int pos_y = (long int)(lat + 0.5);
 		if(pos_x < 0 || pos_y < 0 || pos_x >= axis_size_x || pos_y >= axis_size_y) continue;
-		++counter2;
+		++counter;
 		
 		// Establish bounding box
 		const long int x_min = pos_x > radius ? pos_x - radius : 0;
@@ -3525,12 +3847,12 @@ PUBLIC void DataCube_continuum_flagging(DataCube *self, const char *filename, co
 		}
 	}
 	
-	// Clean up
-	fclose(fp);
-	WCS_delete(wcs);
-	
 	// Print some statistics
-	message("Flagged %zu out of %zu positions from catalogue.", counter2, counter1);
+	message("Flagged %zu out of %zu positions from catalogue.", counter, Table_rows(cont_cat));
+	
+	// Clean up
+	Table_delete(cont_cat);
+	WCS_delete(wcs);
 	
 	return;
 }
@@ -3549,8 +3871,6 @@ PUBLIC void DataCube_continuum_flagging(DataCube *self, const char *filename, co
 //   (4) region    - Array containing the regions to be flagged.     //
 //                   New regions to be flagged will be appended to   //
 //                   any existing region specifications.             //
-//   (5) radius    - Radius of a box around affected pixels to be    //
-//                   flagged.                                        //
 //                                                                   //
 // Return value:                                                     //
 //                                                                   //
@@ -3568,11 +3888,9 @@ PUBLIC void DataCube_continuum_flagging(DataCube *self, const char *filename, co
 //   nels with |rms - median| > threshold * MAD will be added to the //
 //   array of regions to be flagged. The order of the region speci-  //
 //   fication is x_min, x_max, y_min, y_max, z_min, z_max.           //
-//   If radius > 0, then a box of that radius around any affected    //
-//   pixel will be flagged rather than just the pixel itself.        //
 // ----------------------------------------------------------------- //
 
-PUBLIC void DataCube_autoflag(const DataCube *self, const double threshold, const unsigned int mode, Array_siz *region, const size_t radius)
+PUBLIC void DataCube_autoflag(const DataCube *self, const double threshold, const unsigned int mode, Array_siz *region)
 {
 	// Sanity checks
 	check_null(self);
@@ -3731,35 +4049,15 @@ PUBLIC void DataCube_autoflag(const DataCube *self, const double threshold, cons
 			{
 				if(fabs(DataCube_get_data_flt(noise_array, x, y, 0) - median) > threshold * rms)
 				{
-					// Add pixel/region to flagging regions
-					if(radius)
+					// Add pixel to flagging regions
+					#pragma omp critical
 					{
-						const size_t x1 = x > radius ? x - radius : 0;
-						const size_t x2 = x + radius < self->axis_size[0] ? x + radius : self->axis_size[0] - 1;
-						const size_t y1 = y > radius ? y - radius : 0;
-						const size_t y2 = y + radius < self->axis_size[1] ? y + radius : self->axis_size[1] - 1;
-						
-						#pragma omp critical
-						{
-							Array_siz_push(region, x1);
-							Array_siz_push(region, x2);
-							Array_siz_push(region, y1);
-							Array_siz_push(region, y2);
-							Array_siz_push(region, 0);
-							Array_siz_push(region, size_z - 1);
-						}
-					}
-					else
-					{
-						#pragma omp critical
-						{
-							Array_siz_push(region, x);
-							Array_siz_push(region, x);
-							Array_siz_push(region, y);
-							Array_siz_push(region, y);
-							Array_siz_push(region, 0);
-							Array_siz_push(region, size_z - 1);
-						}
+						Array_siz_push(region, x);
+						Array_siz_push(region, x);
+						Array_siz_push(region, y);
+						Array_siz_push(region, y);
+						Array_siz_push(region, 0);
+						Array_siz_push(region, size_z - 1);
 					}
 					++counter;
 				}
@@ -3769,7 +4067,7 @@ PUBLIC void DataCube_autoflag(const DataCube *self, const double threshold, cons
 		// Delete noise array
 		DataCube_delete(noise_array);
 		
-		message("  %zu spatial %s%s marked for flagging.\n", counter, radius ? "region" : "pixel", counter == 1 ? "" : "s");
+		message("  %zu spatial pixel%s marked for flagging.\n", counter, counter == 1 ? "" : "s");
 	}
 	
 	return;
@@ -4622,8 +4920,8 @@ PUBLIC void DataCube_parameterise(const DataCube *self, const DataCube *mask, Ca
 	String *unit_lon = NULL;
 	String *unit_lat = NULL;
 	String *unit_spec = NULL;
-	double beam_area = 1.0;
-	double chan_size = 1.0;
+	double beam_area = 0.0;
+	double chan_size = 0.0;
 	
 	// Extract relevant header information
 	DataCube_get_wcs_info(self, &unit_flux_dens, &unit_flux, &label_lon, &label_lat, &label_spec, &ucd_lon, &ucd_lat, &ucd_spec, &unit_lon, &unit_lat, &unit_spec, &beam_area, &chan_size);
@@ -4634,8 +4932,7 @@ PUBLIC void DataCube_parameterise(const DataCube *self, const DataCube *mask, Ca
 	
 	// Establish if physical parameters can be calculated
 	// (only supported if BUNIT is Jy/beam)
-	physical = physical ? String_compare(unit_flux_dens, "Jy/beam") : physical;
-	if(physical) message("Attempting to measure parameters in physical units.");
+	if((physical = physical ? String_compare(unit_flux_dens, "Jy/beam") : physical)) message("Attempting to measure parameters in physical units.");
 	
 	// Create string holding source name
 	String *source_name = String_new("");
@@ -4860,32 +5157,54 @@ PUBLIC void DataCube_parameterise(const DataCube *self, const DataCube *mask, Ca
 		
 		// Update catalogue entries
 		Source_set_identifier(src, String_get(source_name));
-		Source_set_par_flt(src, "x",          pos_x,                         "pix",                                    "pos.cartesian.x");
-		Source_set_par_flt(src, "y",          pos_y,                         "pix",                                    "pos.cartesian.y");
-		Source_set_par_flt(src, "z",          pos_z,                         "pix",                                    "pos.cartesian.z");
-		Source_set_par_flt(src, "rms",        rms,                           String_get(unit_flux_dens),               "instr.det.noise");
-		Source_set_par_flt(src, "f_min",      f_min,                         String_get(unit_flux_dens),               "phot.flux.density;stat.min");
-		Source_set_par_flt(src, "f_max",      f_max,                         String_get(unit_flux_dens),               "phot.flux.density;stat.max");
-		Source_set_par_flt(src, "f_sum",      f_sum * chan_size / beam_area, String_get(unit_flux),                    "phot.flux");
-		Source_set_par_flt(src, "w20",        w20 * chan_size,               physical ? String_get(unit_spec) : "pix", "spect.line.width");
-		Source_set_par_flt(src, "w50",        w50 * chan_size,               physical ? String_get(unit_spec) : "pix", "spect.line.width");
-		Source_set_par_flt(src, "ell_maj",    ell_maj,                       "pix",                                    "phys.angSize");
-		Source_set_par_flt(src, "ell_min",    ell_min,                       "pix",                                    "phys.angSize");
-		Source_set_par_flt(src, "ell_pa",     ell_pa,                        "deg",                                    "pos.posAng");
-		Source_set_par_flt(src, "ell3s_maj",  ell3s_maj,                     "pix",                                    "phys.angSize");
-		Source_set_par_flt(src, "ell3s_min",  ell3s_min,                     "pix",                                    "phys.angSize");
-		Source_set_par_flt(src, "ell3s_pa",   ell3s_pa,                      "deg",                                    "pos.posAng");
-		Source_set_par_flt(src, "kin_pa",     kin_pa,                        "deg",                                    "pos.posAng");
-		Source_set_par_flt(src, "err_x",      err_x * sqrt(beam_area),       "pix",                                    "stat.error;pos.cartesian.x");
-		Source_set_par_flt(src, "err_y",      err_y * sqrt(beam_area),       "pix",                                    "stat.error;pos.cartesian.y");
-		Source_set_par_flt(src, "err_z",      err_z * sqrt(beam_area),       "pix",                                    "stat.error;pos.cartesian.z");
-		Source_set_par_flt(src, "err_f_sum",  err_f_sum * chan_size / sqrt(beam_area), String_get(unit_flux),          "stat.error;phot.flux");
+		Source_set_par_flt(src, "x",     pos_x, "pix",                      "pos.cartesian.x");
+		Source_set_par_flt(src, "y",     pos_y, "pix",                      "pos.cartesian.y");
+		Source_set_par_flt(src, "z",     pos_z, "pix",                      "pos.cartesian.z");
+		Source_set_par_flt(src, "rms",   rms,   String_get(unit_flux_dens), "instr.det.noise");
+		Source_set_par_flt(src, "f_min", f_min, String_get(unit_flux_dens), "phot.flux.density;stat.min");
+		Source_set_par_flt(src, "f_max", f_max, String_get(unit_flux_dens), "phot.flux.density;stat.max");
+		
+		if(physical)
+		{
+			Source_set_par_flt(src, "f_sum", f_sum * chan_size / beam_area, String_get(unit_flux), "phot.flux");
+			Source_set_par_flt(src, "w20",   w20 * chan_size,               String_get(unit_spec), "spect.line.width");
+			Source_set_par_flt(src, "w50",   w50 * chan_size,               String_get(unit_spec), "spect.line.width");
+		}
+		else
+		{
+			Source_set_par_flt(src, "f_sum", f_sum, String_get(unit_flux_dens), "phot.flux");
+			Source_set_par_flt(src, "w20",   w20,   "pix",                      "spect.line.width");
+			Source_set_par_flt(src, "w50",   w50,   "pix",                      "spect.line.width");
+		}
+		
+		Source_set_par_flt(src, "ell_maj",   ell_maj,   "pix", "phys.angSize");
+		Source_set_par_flt(src, "ell_min",   ell_min,   "pix", "phys.angSize");
+		Source_set_par_flt(src, "ell_pa",    ell_pa,    "deg", "pos.posAng");
+		Source_set_par_flt(src, "ell3s_maj", ell3s_maj, "pix", "phys.angSize");
+		Source_set_par_flt(src, "ell3s_min", ell3s_min, "pix", "phys.angSize");
+		Source_set_par_flt(src, "ell3s_pa",  ell3s_pa,  "deg", "pos.posAng");
+		Source_set_par_flt(src, "kin_pa",    kin_pa,    "deg", "pos.posAng");
+		
+		if(physical)
+		{
+			Source_set_par_flt(src, "err_x",     err_x * sqrt(beam_area),                 "pix",                 "stat.error;pos.cartesian.x");
+			Source_set_par_flt(src, "err_y",     err_y * sqrt(beam_area),                 "pix",                 "stat.error;pos.cartesian.y");
+			Source_set_par_flt(src, "err_z",     err_z * sqrt(beam_area),                 "pix",                 "stat.error;pos.cartesian.z");
+			Source_set_par_flt(src, "err_f_sum", err_f_sum * chan_size / sqrt(beam_area), String_get(unit_flux), "stat.error;phot.flux");
+		}
+		else
+		{
+			Source_set_par_flt(src, "err_x",     err_x,     "pix",                      "stat.error;pos.cartesian.x");
+			Source_set_par_flt(src, "err_y",     err_y,     "pix",                      "stat.error;pos.cartesian.y");
+			Source_set_par_flt(src, "err_z",     err_z,     "pix",                      "stat.error;pos.cartesian.z");
+			Source_set_par_flt(src, "err_f_sum", err_f_sum, String_get(unit_flux_dens), "stat.error;phot.flux");
+		}
 		
 		if(use_wcs)
 		{
-			Source_set_par_flt(src, String_get(label_lon),   longitude, String_get(unit_lon),  String_get(ucd_lon));
-			Source_set_par_flt(src, String_get(label_lat),   latitude,  String_get(unit_lat),  String_get(ucd_lat));
-			Source_set_par_flt(src, String_get(label_spec),  spectral,  String_get(unit_spec), String_get(ucd_spec));
+			Source_set_par_flt(src, String_get(label_lon),  longitude, String_get(unit_lon),  String_get(ucd_lon));
+			Source_set_par_flt(src, String_get(label_lat),  latitude,  String_get(unit_lat),  String_get(ucd_lat));
+			Source_set_par_flt(src, String_get(label_spec), spectral,  String_get(unit_spec), String_get(ucd_spec));
 		}
 		
 		// Clean up (per source)
@@ -5063,7 +5382,7 @@ PRIVATE void DataCube_get_wcs_info(const DataCube *self, String **unit_flux_dens
 	}
 	else
 	{
-		String_set(*unit_flux, "Jy*");
+		String_set(*unit_flux, "Jy*");  // WARNING: Flux density unit 'Jy' currently hard-coded here!!!
 		String_append(*unit_flux, String_get(*unit_spec));
 	}
 	
@@ -5184,8 +5503,10 @@ PRIVATE void DataCube_create_src_name(const DataCube *self, String **source_name
 //   (6)  chan      - Pointer to a data cube object that will be     //
 //                    pointing to the generated map containing the   //
 //                    number of channels per pixel.                  //
-//   (7)  use_wcs   - If true, convert channel numbers to WCS.       //
-//   (8)  positive  - If true, use only pixels with positive flux in //
+//   (7)  obj_name  - Name of the object for OBJECT header entry.    //
+//                    If NULL, no OBJECT entry will be created.      //
+//   (8)  use_wcs   - If true, convert channel numbers to WCS.       //
+//   (9)  positive  - If true, use only pixels with positive flux in //
 //                    the generation of moments 1 and 2.             //
 //                                                                   //
 // Return value:                                                     //
@@ -5209,7 +5530,7 @@ PRIVATE void DataCube_create_src_name(const DataCube *self, String **source_name
 //   from affecting the moment calculation.                          //
 // ----------------------------------------------------------------- //
 
-PUBLIC void DataCube_create_moments(const DataCube *self, const DataCube *mask, DataCube **mom0, DataCube **mom1, DataCube **mom2, DataCube **chan, bool use_wcs, const bool positive)
+PUBLIC void DataCube_create_moments(const DataCube *self, const DataCube *mask, DataCube **mom0, DataCube **mom1, DataCube **mom2, DataCube **chan, const char *obj_name, bool use_wcs, const bool positive)
 {
 	// Sanity checks
 	check_null(self);
@@ -5264,6 +5585,7 @@ PUBLIC void DataCube_create_moments(const DataCube *self, const DataCube *mask, 
 	Header_copy_wcs(self->header, (*mom0)->header);
 	Header_copy_misc(self->header, (*mom0)->header, true, true);
 	if(use_wcs) Header_set_str((*mom0)->header, "BUNIT", String_get(unit_flux_dens));
+	if(obj_name != NULL) Header_set_str((*mom0)->header, "OBJECT", obj_name);
 	
 	if(is_3d)
 	{
@@ -5278,6 +5600,7 @@ PUBLIC void DataCube_create_moments(const DataCube *self, const DataCube *mask, 
 		*chan = DataCube_blank(self->axis_size[0], self->axis_size[1], 1, 32, self->verbosity);
 		Header_copy_wcs(self->header, (*chan)->header);
 		Header_copy_misc(self->header, (*chan)->header, false, true);
+		if(obj_name != NULL) Header_set_str((*chan)->header, "OBJECT", obj_name);
 		
 		// Set BUNIT keyword in moments 1 and 2 and channel map
 		Header_set_str((*mom1)->header, "BUNIT", use_wcs ? String_get(unit_spec) : " ");
@@ -5542,6 +5865,7 @@ PUBLIC void DataCube_create_cubelets(const DataCube *self, const DataCube *mask,
 		Header_copy_wcs(self->header, cubelet->header);
 		Header_adjust_wcs_to_subregion(cubelet->header, x_min, x_max, y_min, y_max, z_min, z_max);
 		Header_copy_misc(self->header, cubelet->header, true, true);
+		Header_set_str(cubelet->header, "OBJECT", Source_get_identifier(src));
 		
 		// Create empty masklet
 		DataCube *masklet = DataCube_blank(nx, ny, nz, 8, self->verbosity);
@@ -5550,6 +5874,7 @@ PUBLIC void DataCube_create_cubelets(const DataCube *self, const DataCube *mask,
 		Header_copy_wcs(self->header, masklet->header);
 		Header_adjust_wcs_to_subregion(masklet->header, x_min, x_max, y_min, y_max, z_min, z_max);
 		Header_set_str(masklet->header, "BUNIT", " ");
+		Header_set_str(masklet->header, "OBJECT", Source_get_identifier(src));
 		
 		// Create data array for spectrum
 		double *spectrum = (double *)memory(CALLOC, nz, sizeof(double));
@@ -5583,7 +5908,7 @@ PUBLIC void DataCube_create_cubelets(const DataCube *self, const DataCube *mask,
 		DataCube *mom1;
 		DataCube *mom2;
 		DataCube *chan;
-		DataCube_create_moments(cubelet, masklet, &mom0, &mom1, &mom2, &chan, use_wcs, false);
+		DataCube_create_moments(cubelet, masklet, &mom0, &mom1, &mom2, &chan, Source_get_identifier(src), use_wcs, false);
 		
 		// Save output products...
 		// ...cubelet
@@ -5783,7 +6108,7 @@ PRIVATE double DataCube_get_beam_area(const DataCube *self)
 //                                                                   //
 // Description:                                                      //
 //                                                                   //
-//   Private method for extracting WCS information from the header   //
+//   Public method for extracting WCS information from the header    //
 //   of the data cube pointed to by 'self'. If valid WCS information //
 //   was found, a WCS object will be returned; otherwise, the method //
 //   will return a NULL pointer. NOTE that it is the responsibility  //
@@ -5791,7 +6116,7 @@ PRIVATE double DataCube_get_beam_area(const DataCube *self)
 //   once it is no longer required in order to release its memory.   //
 // ----------------------------------------------------------------- //
 
-PRIVATE WCS *DataCube_extract_wcs(const DataCube *self)
+PUBLIC WCS *DataCube_extract_wcs(const DataCube *self)
 {
 	WCS *wcs = NULL;
 	int *dim_axes = (int *)memory(MALLOC, self->dimension, sizeof(int));  // NOTE: WCSlib requires int!
@@ -5839,3 +6164,23 @@ PRIVATE void DataCube_swap_byte_order(const DataCube *self)
 	
 	return;
 }
+
+
+// ----------------------------------------------------------------- //
+// Extract header info from in-mem array
+// ----------------------------------------------------------------- //
+// Arguments:                                                        //
+//                                                                   //
+//	 (1) self      - Obj self reference                              //
+//	 (2) dataSrc   - pointer to data array                           //
+//                                                                   //
+// Return value:                                                     //
+//                                                                   //
+//   Pointer to a Header obj                                         //
+//                                                                   //
+// Description:                                                      //
+//                                                                   //
+//		Get the header information from the data source and          //
+//		return it as a header obj.                                   //
+// ----------------------------------------------------------------- //
+

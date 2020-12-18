@@ -764,6 +764,7 @@ PUBLIC void Header_copy_wcs(const Header *source, Header *target)
 			Header_get_str(source, "CUNIT1", value);
 			Header_set_str(target, "CUNIT1", value);
 		}
+		if(Header_check(source, "CROTA1")) Header_set_flt(target, "CROTA1", Header_get_flt(source, "CROTA1"));
 	}
 	
 	// Second axis
@@ -782,6 +783,7 @@ PUBLIC void Header_copy_wcs(const Header *source, Header *target)
 			Header_get_str(source, "CUNIT2", value);
 			Header_set_str(target, "CUNIT2", value);
 		}
+		if(Header_check(source, "CROTA2")) Header_set_flt(target, "CROTA2", Header_get_flt(source, "CROTA2"));
 	}
 	
 	// Third axis
@@ -800,6 +802,7 @@ PUBLIC void Header_copy_wcs(const Header *source, Header *target)
 			Header_get_str(source, "CUNIT3", value);
 			Header_set_str(target, "CUNIT3", value);
 		}
+		if(Header_check(source, "CROTA3")) Header_set_flt(target, "CROTA3", Header_get_flt(source, "CROTA3"));
 		if(Header_check(source, "CELLSCAL"))
 		{
 			// NOTE: CELLSCAL keyword will only be copied for 3-D data!
@@ -807,6 +810,45 @@ PUBLIC void Header_copy_wcs(const Header *source, Header *target)
 			Header_set_str(target, "CELLSCAL", value);
 		}
 	}
+	
+	// PCi_j and CDi_j keywords
+	if(Header_check(source, "PC1_1")) Header_set_flt(target, "PC1_1", Header_get_flt(source, "PC1_1"));
+	if(Header_check(source, "PC2_1")) Header_set_flt(target, "PC2_1", Header_get_flt(source, "PC2_1"));
+	if(Header_check(source, "PC3_1")) Header_set_flt(target, "PC3_1", Header_get_flt(source, "PC3_1"));
+	if(Header_check(source, "PC1_2")) Header_set_flt(target, "PC1_2", Header_get_flt(source, "PC1_2"));
+	if(Header_check(source, "PC2_2")) Header_set_flt(target, "PC2_2", Header_get_flt(source, "PC2_2"));
+	if(Header_check(source, "PC3_2")) Header_set_flt(target, "PC3_2", Header_get_flt(source, "PC3_2"));
+	if(Header_check(source, "PC1_3")) Header_set_flt(target, "PC1_3", Header_get_flt(source, "PC1_3"));
+	if(Header_check(source, "PC2_3")) Header_set_flt(target, "PC2_3", Header_get_flt(source, "PC2_3"));
+	if(Header_check(source, "PC3_3")) Header_set_flt(target, "PC3_3", Header_get_flt(source, "PC3_3"));
+	if(Header_check(source, "PC01_01")) Header_set_flt(target, "PC01_01", Header_get_flt(source, "PC01_01"));
+	if(Header_check(source, "PC02_01")) Header_set_flt(target, "PC02_01", Header_get_flt(source, "PC02_01"));
+	if(Header_check(source, "PC03_01")) Header_set_flt(target, "PC03_01", Header_get_flt(source, "PC03_01"));
+	if(Header_check(source, "PC01_02")) Header_set_flt(target, "PC01_02", Header_get_flt(source, "PC01_02"));
+	if(Header_check(source, "PC02_02")) Header_set_flt(target, "PC02_02", Header_get_flt(source, "PC02_02"));
+	if(Header_check(source, "PC03_02")) Header_set_flt(target, "PC03_02", Header_get_flt(source, "PC03_02"));
+	if(Header_check(source, "PC01_03")) Header_set_flt(target, "PC01_03", Header_get_flt(source, "PC01_03"));
+	if(Header_check(source, "PC02_03")) Header_set_flt(target, "PC02_03", Header_get_flt(source, "PC02_03"));
+	if(Header_check(source, "PC03_03")) Header_set_flt(target, "PC03_03", Header_get_flt(source, "PC03_03"));
+	
+	if(Header_check(source, "CD1_1")) Header_set_flt(target, "CD1_1", Header_get_flt(source, "CD1_1"));
+	if(Header_check(source, "CD2_1")) Header_set_flt(target, "CD2_1", Header_get_flt(source, "CD2_1"));
+	if(Header_check(source, "CD3_1")) Header_set_flt(target, "CD3_1", Header_get_flt(source, "CD3_1"));
+	if(Header_check(source, "CD1_2")) Header_set_flt(target, "CD1_2", Header_get_flt(source, "CD1_2"));
+	if(Header_check(source, "CD2_2")) Header_set_flt(target, "CD2_2", Header_get_flt(source, "CD2_2"));
+	if(Header_check(source, "CD3_2")) Header_set_flt(target, "CD3_2", Header_get_flt(source, "CD3_2"));
+	if(Header_check(source, "CD1_3")) Header_set_flt(target, "CD1_3", Header_get_flt(source, "CD1_3"));
+	if(Header_check(source, "CD2_3")) Header_set_flt(target, "CD2_3", Header_get_flt(source, "CD2_3"));
+	if(Header_check(source, "CD3_3")) Header_set_flt(target, "CD3_3", Header_get_flt(source, "CD3_3"));
+	if(Header_check(source, "CD01_01")) Header_set_flt(target, "CD01_01", Header_get_flt(source, "CD01_01"));
+	if(Header_check(source, "CD02_01")) Header_set_flt(target, "CD02_01", Header_get_flt(source, "CD02_01"));
+	if(Header_check(source, "CD03_01")) Header_set_flt(target, "CD03_01", Header_get_flt(source, "CD03_01"));
+	if(Header_check(source, "CD01_02")) Header_set_flt(target, "CD01_02", Header_get_flt(source, "CD01_02"));
+	if(Header_check(source, "CD02_02")) Header_set_flt(target, "CD02_02", Header_get_flt(source, "CD02_02"));
+	if(Header_check(source, "CD03_02")) Header_set_flt(target, "CD03_02", Header_get_flt(source, "CD03_02"));
+	if(Header_check(source, "CD01_03")) Header_set_flt(target, "CD01_03", Header_get_flt(source, "CD01_03"));
+	if(Header_check(source, "CD02_03")) Header_set_flt(target, "CD02_03", Header_get_flt(source, "CD02_03"));
+	if(Header_check(source, "CD03_03")) Header_set_flt(target, "CD03_03", Header_get_flt(source, "CD03_03"));
 	
 	// Rest frequency and velocity
 	if(Header_check(source, "RESTFREQ")) Header_set_flt(target, "RESTFREQ", Header_get_flt(source, "RESTFREQ"));

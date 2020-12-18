@@ -1,6 +1,6 @@
 /// ____________________________________________________________________ ///
 ///                                                                      ///
-/// SoFiA 2.2.1 (LinkerPar.h) - Source Finding Application               ///
+/// SoFiA 2.2.1 (Flagger.h) - Source Finding Application                 ///
 /// Copyright (C) 2020 Tobias Westmeier                                  ///
 /// ____________________________________________________________________ ///
 ///                                                                      ///
@@ -29,56 +29,36 @@
 /// ____________________________________________________________________ ///
 ///                                                                      ///
 
-#ifndef LINKERPAR_H
-#define LINKERPAR_H
+#ifndef FLAGGER_H
+#define FLAGGER_H
 
 #include "common.h"
-#include "Table.h"
-#include "Map.h"
-#include "Matrix.h"
-#include "Catalog.h"
-#include "Array_dbl.h"
+
+// List of supported flagging region shapes
+// NOTE: SHAPE_COUNT must always be the last item and keeps
+//       track of the total number of supported shapes.
+enum {PIXEL, CHANNEL, REGION, CIRCLE, SHAPE_COUNT};
 
 
 // ----------------------------------------------------------------- //
-// Class 'LinkerPar'                                                 //
+// Class 'Flagger'                                                   //
 // ----------------------------------------------------------------- //
 // The purpose of this class is to provide a structure for storing   //
-// and updating source parameters handled by the linker implemented  //
-// in the class 'DataCube'.                                          //
+// flagging information. It supports several different shapes of     //
+// regions, such as individual pixels or 3D rectangular regions. All //
+// parameters are expected to be in units of integer pixels.         //
 // ----------------------------------------------------------------- //
 
-typedef CLASS LinkerPar LinkerPar;
+typedef CLASS Flagger Flagger;
 
 // Constructor and destructor
-PUBLIC  LinkerPar *LinkerPar_new          (const bool verbosity);
-PUBLIC  void       LinkerPar_delete       (LinkerPar *self);
+PUBLIC Flagger *Flagger_new(void);
+PUBLIC void     Flagger_delete(Flagger *self);
 
 // Public methods
-PUBLIC  size_t     LinkerPar_get_size     (const LinkerPar *self);
-PUBLIC  void       LinkerPar_push         (LinkerPar *self, const size_t label, const size_t x, const size_t y, const size_t z, const double flux, const unsigned char flag);
-PUBLIC  void       LinkerPar_pop          (LinkerPar *self);
-PUBLIC  void       LinkerPar_update       (LinkerPar *self, const size_t x, const size_t y, const size_t z, const double flux, const unsigned char flag);
-PUBLIC  void       LinkerPar_update_flag  (LinkerPar *self, const unsigned char flag);
-PUBLIC  size_t     LinkerPar_get_obj_size (const LinkerPar *self, const size_t label, const int axis);
-PUBLIC  size_t     LinkerPar_get_npix     (const LinkerPar *self, const size_t label);
-PUBLIC  void       LinkerPar_get_bbox     (const LinkerPar *self, const size_t label, size_t *x_min, size_t *x_max, size_t *y_min, size_t *y_max, size_t *z_min, size_t *z_max);
-PUBLIC  double     LinkerPar_get_flux     (const LinkerPar *self, const size_t label);
-PUBLIC  double     LinkerPar_get_rel      (const LinkerPar *self, const size_t label);
-PUBLIC  size_t     LinkerPar_get_label    (const LinkerPar *self, const size_t index);
-
-PUBLIC  Catalog   *LinkerPar_make_catalog (const LinkerPar *self, const Map *filter, const char *flux_unit);
-PUBLIC  void       LinkerPar_print_info   (const LinkerPar *self);
-
-// Reliability filtering
-PUBLIC  Matrix    *LinkerPar_reliability  (LinkerPar *self, const double scale_kernel, const double fmin, const Table *rel_cat);
-PUBLIC  void       LinkerPar_rel_plots    (const LinkerPar *self, const double threshold, const double fmin, const Matrix *covar, const char *filename, const bool overwrite);
-
-// Private methods
-PRIVATE size_t     LinkerPar_get_index    (const LinkerPar *self, const size_t label);
-PRIVATE void       LinkerPar_reallocate_memory(LinkerPar *self);
-
-// Private functions
-PRIVATE void       LinkerPar_skellam_plot (Array_dbl *skellam, const char *filename, const bool overwrite);
+PUBLIC size_t   Flagger_size(const Flagger *self);
+PUBLIC int      Flagger_npar(const Flagger *self, const int shape);
+PUBLIC Flagger *Flagger_add(Flagger *self, const int shape, ...);
+PUBLIC void     Flagger_get(const Flagger *self, const size_t index, int *shape, const long int **parameters);
 
 #endif

@@ -205,26 +205,26 @@ PRIVATE void WCS_setup(WCS *self, const char *header, const int n_keys, const in
 	self->wcs_pars->flag = -1;
 	
 	// Initialise wcsprm structure
-	int success = wcsini(true, n_axes, self->wcs_pars);
+	int status = wcsini(true, n_axes, self->wcs_pars);
 	
 	// Parse the FITS header to fill in the wcsprm structure
-	if(!success) success = wcspih((char *)header, n_keys, WCSHDR_all, 0, &n_rejected, &self->n_wcs_rep, &self->wcs_pars);
+	if(!status) status = wcspih((char *)header, n_keys, WCSHDR_all, 0, &n_rejected, &self->n_wcs_rep, &self->wcs_pars);
 	// NOTE: The (char *) cast is necessary as wcspih would actually
 	//       manipulate the header if the 4th argument was negative!
 	
 	// Apply all necessary corrections to wcsprm structure
 	// (missing cards, non-standard units or spectral types, etc.)
-	if(!success) success = wcsfix(1, dim_axes, self->wcs_pars, stat);
+	if(!status) status = wcsfix(1, dim_axes, self->wcs_pars, stat);
 	
 	// Set up additional parameters in wcsprm structure derived from imported data
-	if(!success) success = wcsset(self->wcs_pars);
+	if(!status) status = wcsset(self->wcs_pars);
 	
 	// Redo the corrections to account for things like NCP projections
-	if(!success) success = wcsfix(1, dim_axes, self->wcs_pars, stat);
+	if(!status) status = wcsfix(1, dim_axes, self->wcs_pars, stat);
 	
-	if(success)
+	if(status)
 	{
-		warning("wcslib error %d: %s\n         Failed to parse WCS information.", success, wcs_errmsg[success]);
+		warning("wcslib error %d: %s\n         Failed to parse WCS information.", status, wcs_errmsg[status]);
 		self->valid = false;
 	}
 	else
@@ -263,7 +263,10 @@ PRIVATE void WCS_setup(WCS *self, const char *header, const int n_keys, const in
 //   of the cube are in the aforementioned order. Pixel coordinates  //
 //   must be zero-based; world coordinates will be in the native     //
 //   units of the data cube. Longitude, latitude or spectral can be  //
-//   NULL, in which case they are not updated.                       //
+//   NULL, in which case they are not updated. If invalid input co-  //
+//   ordinates are supplied by the user, then a warning message will //
+//   be printed and the output coordinate variables will be left un- //
+//   changed.                                                        //
 // ----------------------------------------------------------------- //
 
 PUBLIC void WCS_convertToWorld(const WCS *self, const double x, const double y, const double z, double *longitude, double *latitude, double *spectral)
@@ -296,13 +299,15 @@ PUBLIC void WCS_convertToWorld(const WCS *self, const double x, const double y, 
 	int stat;
 	
 	// Call WCS conversion module
-	int success = wcsp2s(self->wcs_pars, 1, n_axes, coord_pixel, tmp_world, &phi, &theta, coord_world, &stat);
-	ensure(!success, ERR_FAILURE, "wcslib error %d: %s", success, wcs_errmsg[success]);
-	
-	// Pass back world coordinates
-	if(n_axes > 0 && longitude != NULL) *longitude = coord_world[0];
-	if(n_axes > 1 &&  latitude != NULL) *latitude  = coord_world[1];
-	if(n_axes > 2 &&  spectral != NULL) *spectral  = coord_world[2];
+	int status = wcsp2s(self->wcs_pars, 1, n_axes, coord_pixel, tmp_world, &phi, &theta, coord_world, &stat);
+	if(!status)
+	{
+		// Pass back world coordinates
+		if(n_axes > 0 && longitude != NULL) *longitude = coord_world[0];
+		if(n_axes > 1 &&  latitude != NULL) *latitude  = coord_world[1];
+		if(n_axes > 2 &&  spectral != NULL) *spectral  = coord_world[2];
+	}
+	else warning("wcslib error %d: %s", status, wcs_errmsg[status]);
 	
 	// Clean up
 	free(coord_pixel);
@@ -339,7 +344,9 @@ PUBLIC void WCS_convertToWorld(const WCS *self, const double x, const double y, 
 //   of the cube are in the aforementioned order. Pixel coordinates  //
 //   will be zero-based; world coordinates must be in the native     //
 //   units of the data cube. X, y or z can be NULL, in which case    //
-//   they are not updated.                                           //
+//   they are not updated. If invalid input coordinates are supplied //
+//   by the user, then a warning message will be printed and the     //
+//   output coordinate variables will be left unchanged.             //
 // ----------------------------------------------------------------- //
 
 PUBLIC void WCS_convertToPixel(const WCS *self, const double longitude, const double latitude, const double spectral, double *x, double *y, double *z)
@@ -370,14 +377,16 @@ PUBLIC void WCS_convertToPixel(const WCS *self, const double longitude, const do
 	double theta;
 	int stat;
 	
-	int success = wcss2p(self->wcs_pars, 1, n_axes, coord_world, &phi, &theta, tmp_world, coord_pixel, &stat);
-	ensure(!success, ERR_FAILURE, "wcslib error %d: %s", success, wcs_errmsg[success]);
-	
-	// Pass back pixel coordinates
-	// NOTE: WCS pixel arrays are 1-based!!!
-	if(n_axes > 0 && x != NULL) *x = coord_pixel[0] - 1.0;
-	if(n_axes > 1 && y != NULL) *y = coord_pixel[1] - 1.0;
-	if(n_axes > 2 && z != NULL) *z = coord_pixel[2] - 1.0;
+	int status = wcss2p(self->wcs_pars, 1, n_axes, coord_world, &phi, &theta, tmp_world, coord_pixel, &stat);
+	if(!status)
+	{
+		// Pass back pixel coordinates
+		// NOTE: WCS pixel arrays are 1-based!!!
+		if(n_axes > 0 && x != NULL) *x = coord_pixel[0] - 1.0;
+		if(n_axes > 1 && y != NULL) *y = coord_pixel[1] - 1.0;
+		if(n_axes > 2 && z != NULL) *z = coord_pixel[2] - 1.0;
+	}
+	else warning("wcslib error %d: %s", status, wcs_errmsg[status]);
 	
 	// Clean up
 	free(coord_pixel);

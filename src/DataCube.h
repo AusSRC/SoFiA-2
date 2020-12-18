@@ -50,6 +50,19 @@
 #define PRESERVE true
 typedef enum {NOISE_STAT_STD, NOISE_STAT_MAD, NOISE_STAT_GAUSS} noise_stat;
 
+// ----------------------------------------------------------------- //
+// DATATYPE                                                          //
+// ----------------------------------------------------------------- //
+// This enum defines the source to use for the data to read into    //
+// the cube. The default is to read a FITS format file to retrieve   //
+// data and metadata (in the header). Other types are:               //
+//                                                                   //
+//		"MEM" - use a pointer to a flat array of floats and a        //
+//              pointer to a char array of key/value pairs.          //
+//		"OUTOFRANGE" - should never equal this - keep this as the    //
+//					   last element of the enum.                     //
+// ----------------------------------------------------------------- //
+typedef enum {FITS, MEM, OUTOFRANGE} SOURCETYPE;
 
 // ----------------------------------------------------------------- //
 // Class 'DataCube'                                                  //
@@ -70,8 +83,11 @@ PUBLIC DataCube  *DataCube_blank            (const size_t nx, const size_t ny, c
 PUBLIC void       DataCube_delete           (DataCube *self);
 
 // Public methods
-// Loading/saving from/to FITS format
-PUBLIC void       DataCube_load             (DataCube *self, const char *filename, const Array_siz *region);
+// Loading data into the cube
+PUBLIC void       DataCube_load             (DataCube *self, char *dataSrc, const Array_siz *region, SOURCETYPE source, char *header);
+PUBLIC void       DataCube_readFITS         (DataCube *self, const char *filename, const Array_siz *region);
+PUBLIC void       DataCube_readMEM          (DataCube *self, double *dataPtr);
+// Saving to FITS format
 PUBLIC void       DataCube_save             (const DataCube *self, const char *filename, const bool overwrite, const bool preserve);
 
 // Getting basic information
@@ -142,7 +158,7 @@ PUBLIC DataCube  *DataCube_2d_mask          (const DataCube *self);
 // Flagging
 PUBLIC void       DataCube_flag_regions     (DataCube *self, const Array_siz *region);
 PUBLIC void       DataCube_copy_blanked     (DataCube *self, const DataCube *source);
-PUBLIC void       DataCube_autoflag         (const DataCube *self, const double threshold, const unsigned int mode, Array_siz *region, const size_t radius);
+PUBLIC void       DataCube_autoflag         (const DataCube *self, const double threshold, const unsigned int mode, Array_siz *region);
 PUBLIC size_t     DataCube_flag_infinity    (const DataCube *self, Array_siz *region);
 
 // Source finding
@@ -156,8 +172,11 @@ PUBLIC LinkerPar *DataCube_run_linker       (const DataCube *self, DataCube *mas
 PUBLIC void       DataCube_parameterise     (const DataCube *self, const DataCube *mask, Catalog *cat, bool use_wcs, bool physical, const char *prefix);
 
 // Create moment maps and cubelets
-PUBLIC void       DataCube_create_moments   (const DataCube *self, const DataCube *mask, DataCube **mom0, DataCube **mom1, DataCube **mom2, DataCube **chan, bool use_wcs, const bool positive);
+PUBLIC void       DataCube_create_moments   (const DataCube *self, const DataCube *mask, DataCube **mom0, DataCube **mom1, DataCube **mom2, DataCube **chan, const char *obj_name, bool use_wcs, const bool positive);
 PUBLIC void       DataCube_create_cubelets  (const DataCube *self, const DataCube *mask, const Catalog *cat, const char *basename, const bool overwrite, bool use_wcs, bool physical, const size_t margin);
+
+// WCS
+PUBLIC WCS       *DataCube_extract_wcs      (const DataCube *self);
 
 // Private methods
 PRIVATE inline size_t DataCube_get_index       (const DataCube *self, const size_t x, const size_t y, const size_t z);
@@ -165,7 +184,6 @@ PRIVATE        void   DataCube_get_xyz         (const DataCube *self, const size
 PRIVATE        void   DataCube_process_stack   (const DataCube *self, DataCube *mask, Stack *stack, const size_t radius_x, const size_t radius_y, const size_t radius_z, const int32_t label, LinkerPar *lpar, const double rms);
 PRIVATE        void   DataCube_grow_mask_xy    (const DataCube *self, DataCube *mask, const long int src_id, const size_t radius, const long int mask_value, double *f_sum, double *f_min, double *f_max, size_t *n_pix, long int *flag, size_t *x_min, size_t *x_max, size_t *y_min, size_t *y_max, const size_t z_min, const size_t z_max);
 PRIVATE        double DataCube_get_beam_area   (const DataCube *self);
-PRIVATE        WCS   *DataCube_extract_wcs     (const DataCube *self);
 PRIVATE        void   DataCube_get_wcs_info    (const DataCube *self, String **unit_flux_dens, String **unit_flux, String **label_lon, String **label_lat, String **label_spec, String **ucd_lon, String **ucd_lat, String **ucd_spec, String **unit_lon, String **unit_lat, String **unit_spec, double *beam_area, double *chan_size);
 PRIVATE        void   DataCube_create_src_name (const DataCube *self, String **source_name, const char *prefix, const double longitude, const double latitude, const String *label_lon);
 PRIVATE        void   DataCube_swap_byte_order (const DataCube *self);

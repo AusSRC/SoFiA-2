@@ -438,13 +438,13 @@ PUBLIC void Parameter_load(Parameter *self, const char *filename, const int mode
 	ensure(fp != NULL, ERR_FILE_ACCESS, "Failed to open input file: %s.", filename);
 	
 	// Allocate memory for a single line
-	char *line = (char *)memory(MALLOC, MAX_LINE_SIZE, sizeof(char));
+	char *line = (char *)memory(MALLOC, PARAMETER_MAX_LINE_SIZE, sizeof(char));
 	
 	// Record if unknown parameters are encountered
 	bool unknown_parameter = false;
 	
 	// Read lines from file
-	while(fgets(line, MAX_LINE_SIZE, fp))
+	while(fgets(line, PARAMETER_MAX_LINE_SIZE, fp))
 	{
 		// Trim line and check for comments and empty lines
 		char *trimmed = trim_string(line);
@@ -527,6 +527,7 @@ PUBLIC void Parameter_default(Parameter *self)
 	Parameter_set(self, "pipeline.threads"         , "0");
 	
 	// Input
+	Parameter_set(self, "input.source"             , "FITS"); // alternatives - MEM
 	Parameter_set(self, "input.data"               , "");
 	Parameter_set(self, "input.region"             , "");
 	Parameter_set(self, "input.gain"               , "");
@@ -538,10 +539,9 @@ PUBLIC void Parameter_default(Parameter *self)
 	// Flagging
 	Parameter_set(self, "flag.region"              , "");
 	Parameter_set(self, "flag.catalog"             , "");
-	Parameter_set(self, "flag.radius"              , "0");
+	Parameter_set(self, "flag.radius"              , "5");
 	Parameter_set(self, "flag.auto"                , "false");
 	Parameter_set(self, "flag.threshold"           , "5.0");
-	Parameter_set(self, "flag.radiusSpatial"       , "0");
 	Parameter_set(self, "flag.log"                 , "false");
 	
 	// Continuum subtraction
@@ -600,6 +600,7 @@ PUBLIC void Parameter_default(Parameter *self)
 	Parameter_set(self, "reliability.scaleKernel"  , "0.4");
 	Parameter_set(self, "reliability.fmin"         , "15.0");
 	Parameter_set(self, "reliability.plot"         , "true");
+	Parameter_set(self, "reliability.catalog"      , "");
 	
 	// Mask dilation
 	Parameter_set(self, "dilation.enable"          , "false");

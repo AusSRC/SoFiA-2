@@ -1,6 +1,6 @@
 /// ____________________________________________________________________ ///
 ///                                                                      ///
-/// SoFiA 2.2.1 (Parameter.h) - Source Finding Application               ///
+/// SoFiA 2.2.1 (Table.h) - Source Finding Application                   ///
 /// Copyright (C) 2020 Tobias Westmeier                                  ///
 /// ____________________________________________________________________ ///
 ///                                                                      ///
@@ -29,46 +29,39 @@
 /// ____________________________________________________________________ ///
 ///                                                                      ///
 
-#ifndef PARAMETER_H
-#define PARAMETER_H
+#ifndef TABLE_H
+#define TABLE_H
 
-#include <stdbool.h>
 #include "common.h"
 
-#define PARAMETER_MAX_LINE_SIZE 1024
+#define TABLE_INDEX(r,c) ((c) + self->cols * (r))
+#define TABLE_MAX_LINE_SIZE 65536
 
-enum {PARAMETER_APPEND, PARAMETER_UPDATE};
+typedef CLASS Table Table;
 
 
 // ----------------------------------------------------------------- //
-// Class 'Parameter'                                                 //
+// Class 'Table'                                                     //
 // ----------------------------------------------------------------- //
-// The purpose of this class is to provide a structure for handling  //
-// SoFiA parameter settings. Settings can be loaded from a file and  //
-// then read or updated as needed. All parameter settings are treat- //
-// ed as strings, and several methods are available for extracting   //
-// the parameter value as a specific data type.                      //
+// This class provides a convenient container for reading tabulated  //
+// data from an ASCII file. The container size will be automatically //
+// adjusted to match the number of rows and columns in the file. The //
+// data values will be stored as double-precision floating-point.    //
+// The standard constructor has been set to private to disallow the  //
+// creation of empty Table objects.                                  //
 // ----------------------------------------------------------------- //
-
-typedef CLASS Parameter Parameter;
 
 // Constructor and destructor
-PUBLIC  Parameter        *Parameter_new       (const bool verbosity);
-PUBLIC  void              Parameter_delete    (Parameter *self);
+// NOTE: The standard constructor is private, as Table objects should
+//       only be created using the Table_from_file constructor.
+PRIVATE Table  *Table_new       (void);
+PUBLIC  Table  *Table_from_file (const char *filename, const char *delimiters);
+PUBLIC  void    Table_delete    (Table * self);
 
 // Public methods
-PUBLIC  void              Parameter_set       (Parameter *self, const char *key, const char *value);
-PUBLIC  bool              Parameter_exists    (const Parameter *self, const char *key, size_t *index);
-PUBLIC  double            Parameter_get_flt   (const Parameter *self, const char *key);
-PUBLIC  long int          Parameter_get_int   (const Parameter *self, const char *key);
-PUBLIC  unsigned long int Parameter_get_uint  (const Parameter *self, const char *key);
-PUBLIC  bool              Parameter_get_bool  (const Parameter *self, const char *key);
-PUBLIC  const char       *Parameter_get_str   (const Parameter *self, const char *key);
-PUBLIC  void              Parameter_load      (Parameter *self, const char *filename, const int mode);
-PUBLIC  void              Parameter_default   (Parameter *self);
-
-// Private methods
-PRIVATE void              Parameter_append_memory(Parameter *self);
-PRIVATE const char       *Parameter_get_raw   (const Parameter *self, const char *key);
+PUBLIC  size_t  Table_rows      (const Table *self);
+PUBLIC  size_t  Table_cols      (const Table *self);
+PUBLIC  double  Table_get       (const Table *self, const size_t row, const size_t col);
+PUBLIC  void    Table_set       (Table *self, const size_t row, const size_t col, const double value);
 
 #endif

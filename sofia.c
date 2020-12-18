@@ -48,6 +48,7 @@
 #include <sys/stat.h>
 
 #include "src/common.h"
+#include "src/Table.h"
 #include "src/Path.h"
 #include "src/Array_dbl.h"
 #include "src/Array_siz.h"
@@ -55,6 +56,7 @@
 #include "src/Matrix.h"
 #include "src/Parameter.h"
 #include "src/Catalog.h"
+#include "src/WCS.h"
 #include "src/DataCube.h"
 #include "src/LinkerPar.h"
 
@@ -66,8 +68,25 @@
 // and write out catalogues and images.                              //
 // ----------------------------------------------------------------- //
 
-int main(int argc, char **argv)
+//int mainline(char *par_file, char *argv2, char *argv3)
+int mainline(double *dataPtr)
 {
+
+	SOURCETYPE DATATYPE;
+	char *path_to_par = "sofia.par";
+	char *hdrPtr;
+/*	char *dataPtr;
+
+	// If argv2 and argv3 are NULL, we've been called in FITS mode
+	if (argv2 == NULL && argv3 == NULL) {
+		hdrPtr = dataPtr = NULL;
+	}
+	else { // data is in memory
+		hdrPtr = argv2;
+		dataPtr = (float *)argv3;
+	}
+*/
+
 	// ---------------------------- //
 	// Record starting time         //
 	// ---------------------------- //
@@ -111,7 +130,7 @@ int main(int argc, char **argv)
 	// Check command line arguments //
 	// ---------------------------- //
 	
-	ensure(argc == 2, ERR_USER_INPUT, "Unexpected number of command line arguments.\nUsage: %s <parameter_file>", argv[0]);
+	//ensure(argc == 2, ERR_USER_INPUT, "Unexpected number of command line arguments.\nUsage: %s <parameter_file>", argv[0]);
 	
 	
 	
@@ -132,8 +151,10 @@ int main(int argc, char **argv)
 	// Load user parameters         //
 	// ---------------------------- //
 	
-	message("Loading user parameter file: \'%s\'.\n", argv[1]);
-	Parameter_load(par, argv[1], PARAMETER_UPDATE);
+	//message("Loading user parameter file: \'%s\'.\n", argv[1]);
+	//Parameter_load(par, argv[1], PARAMETER_UPDATE);
+	message("Loading user parameter file: \'%s\'.\n", path_to_par);
+	Parameter_load(par, path_to_par, PARAMETER_UPDATE);
 	
 	
 	
@@ -182,6 +203,7 @@ int main(int argc, char **argv)
 	const bool keep_negative     = Parameter_get_bool(par, "linker.keepNegative");
 	const bool use_reliability   = Parameter_get_bool(par, "reliability.enable");
 	const bool use_rel_plot      = Parameter_get_bool(par, "reliability.plot");
+	const bool use_rel_cat       = strlen(Parameter_get_str(par, "reliability.catalog")) ? true : false;
 	const bool use_mask_dilation = Parameter_get_bool(par, "dilation.enable");
 	const bool use_parameteriser = Parameter_get_bool(par, "parameter.enable");
 	const bool use_wcs           = Parameter_get_bool(par, "parameter.wcs");
@@ -203,6 +225,10 @@ int main(int argc, char **argv)
 	const double rel_threshold   = Parameter_get_flt(par, "reliability.threshold");
 	const double rel_fmin        = Parameter_get_flt(par, "reliability.fmin");
 	
+	// For defining the type of data source - file, memory etc
+	if (strcmp(Parameter_get_str(par,"input.source"), "FITS") == 0) DATATYPE = FITS;
+	else if (strcmp(Parameter_get_str(par,"input.source"), "MEM") == 0) DATATYPE = MEM;
+
 	unsigned int autoflag_mode = 0;
 	if     (strcmp(Parameter_get_str(par, "flag.auto"), "channels") == 0) autoflag_mode = 1;
 	else if(strcmp(Parameter_get_str(par, "flag.auto"), "pixels")   == 0) autoflag_mode = 2;
@@ -414,11 +440,9 @@ int main(int argc, char **argv)
 			ensure(!Path_file_is_readable(path_rel_plot), ERR_FILE_ACCESS,
 				"Reliability plot already exists. Please delete the file\n"
 				"       or set \'output.overwrite = true\'.");
-		}
-		if(use_reliability && use_rel_plot) {
-			ensure(!Path_file_is_readable(path_skel_plot), ERR_FILE_ACCESS,
+			/*ensure(!Path_file_is_readable(path_skel_plot), ERR_FILE_ACCESS,
 				"Skellam plot already exists. Please delete the file\n"
-				"       or set \'output.overwrite = true\'.");
+				"       or set \'output.overwrite = true\'.");*/
 		}
 		if(autoflag_log) {
 			ensure(!Path_file_is_readable(path_flag), ERR_FILE_ACCESS,
@@ -432,7 +456,6 @@ int main(int argc, char **argv)
 	// ---------------------------- //
 	// Load data cube               //
 	// ---------------------------- //
-	
 	// Set up region if required
 	Array_siz *region = use_region ? Array_siz_new_str(Parameter_get_str(par, "input.region")) : NULL;
 	
@@ -442,8 +465,14 @@ int main(int argc, char **argv)
 	// Load data cube
 	status("Loading data cube");
 	DataCube *dataCube = DataCube_new(verbosity);
-	DataCube_load(dataCube, Path_get(path_data_in), region);
-	
+	if (DATATYPE == FITS) {
+		status("    - FITS mode");
+		DataCube_readFITS(dataCube, Path_get(path_data_in), region);
+	}
+	else {
+		status("    - MEM mode");
+		DataCube_readMEM(dataCube, dataPtr);
+	}
 	// Search for values of infinity and append affected pixels to flagging region
 	// (Yes, some data cubes do contain those!)
 	if(DataCube_flag_infinity(dataCube, flag_regions)) use_flagging = true;
@@ -488,7 +517,7 @@ int main(int argc, char **argv)
 	{
 		status("Loading and applying noise cube");
 		DataCube *noiseCube = DataCube_new(verbosity);
-		DataCube_load(noiseCube, Path_get(path_noise_in), region);
+		DataCube_readFITS(noiseCube, Path_get(path_noise_in), region);
 		
 		// Divide data by noise cube
 		DataCube_divide(dataCube, noiseCube);
@@ -510,7 +539,7 @@ int main(int argc, char **argv)
 	{
 		status("Loading and applying weights cube");
 		DataCube *weightsCube = DataCube_new(verbosity);
-		DataCube_load(weightsCube, Path_get(path_weights_in), region);
+		DataCube_readFITS(weightsCube, Path_get(path_weights_in), region);
 		
 		// Multiply data by square root of weights cube
 		DataCube_apply_weights(dataCube, weightsCube);
@@ -604,7 +633,7 @@ int main(int argc, char **argv)
 		
 		// Set up auto-flagging if requested
 		Array_siz *autoflag_regions = Array_siz_new(0);
-		DataCube_autoflag(dataCube, Parameter_get_flt(par, "flag.threshold"), autoflag_mode, autoflag_regions, Parameter_get_int(par, "flag.radiusSpatial"));
+		DataCube_autoflag(dataCube, Parameter_get_flt(par, "flag.threshold"), autoflag_mode, autoflag_regions);
 		
 		const size_t size = Array_siz_get_size(autoflag_regions);
 		
@@ -869,7 +898,7 @@ int main(int argc, char **argv)
 		// Load mask cube
 		status("Loading mask cube");
 		maskCube = DataCube_new(verbosity);
-		DataCube_load(maskCube, Path_get(path_mask_in), region);
+		DataCube_readFITS(maskCube, Path_get(path_mask_in), region);
 		
 		// Ensure that mask has the right type and size
 		ensure(DataCube_gethd_int(maskCube, "BITPIX") == 32, ERR_USER_INPUT, "Mask cube must be of 32-bit integer type.");
@@ -968,14 +997,61 @@ int main(int argc, char **argv)
 	{
 		status("Measuring reliability");
 		
+		// Check if catalogue supplied
+		Table *rel_cat = NULL;
+		if(use_rel_cat)
+		{
+			message("Reading in reliability catalogue.");
+			
+			// Read catalogue into table
+			rel_cat = Table_from_file(Parameter_get_str(par, "reliability.catalog"), " \t,|");
+			
+			if(Table_rows(rel_cat) == 0 || Table_cols(rel_cat) != 2)
+			{
+				warning("Reliability catalogue non-compliant; must contain 2 data columns.\n         Catalogue file will be ignored.");
+				Table_delete(rel_cat);
+				rel_cat = NULL;
+			}
+			else
+			{
+				message("Extracting %zu position%s from catalogue.", Table_rows(rel_cat), Table_rows(rel_cat) > 1 ? "s" : "");
+				
+				// Extract WCS information
+				WCS *wcs = DataCube_extract_wcs(dataCube);
+				
+				if(wcs != NULL)
+				{
+					// Loop over all rows and convert WCS to pixels
+					for(size_t row = 0; row < Table_rows(rel_cat); ++row)
+					{
+						double lon = -1e+30;
+						double lat = -1e+30;
+						WCS_convertToPixel(wcs, Table_get(rel_cat, row, 0), Table_get(rel_cat, row, 1), 0.0, &lon, &lat, NULL);
+						Table_set(rel_cat, row, 0, lon);
+						Table_set(rel_cat, row, 1, lat);
+					}
+				}
+				else
+				{
+					warning("WCS conversion failed; cannot apply reliability catalogue.");
+					Table_delete(rel_cat);
+					rel_cat = NULL;
+				}
+				
+				// Delete WCS object again
+				WCS_delete(wcs);
+			}
+		}
+		
 		// Calculate reliability values
-		Matrix *covar = LinkerPar_reliability(lpar, Parameter_get_flt(par, "reliability.scaleKernel"), rel_fmin);
+		Matrix *covar = LinkerPar_reliability(lpar, Parameter_get_flt(par, "reliability.scaleKernel"), rel_fmin, rel_cat);
 		
 		// Create plots if requested
 		if(use_rel_plot) LinkerPar_rel_plots(lpar, rel_threshold, rel_fmin, covar, Path_get(path_rel_plot), overwrite);
 		
-		// Delete covariance matrix again
+		// Delete covariance matrix and catalogue table again
 		Matrix_delete(covar);
+		Table_delete(rel_cat);
 		
 		// Set up relabelling filter by recording old and new label pairs of reliable sources
 		size_t new_label = 1;
@@ -1055,7 +1131,7 @@ int main(int argc, char **argv)
 	if(use_noise || use_weights || use_noise_scaling)  // ALERT: Add conditions here as needed.
 	{
 		status("Reloading data cube for parameterisation");
-		DataCube_load(dataCube, Path_get(path_data_in), region);
+		DataCube_readFITS(dataCube, Path_get(path_data_in), region);
 		
 		// Apply flags if required
 		if(use_flagging) DataCube_flag_regions(dataCube, flag_regions);
@@ -1075,7 +1151,7 @@ int main(int argc, char **argv)
 		{
 			status("Loading and applying gain cube");
 			DataCube *gainCube = DataCube_new(verbosity);
-			DataCube_load(gainCube, Path_get(path_gain_in), region);
+			DataCube_readFITS(gainCube, Path_get(path_gain_in), region);
 			
 			// Divide by gain cube
 			DataCube_divide(dataCube, gainCube);
@@ -1133,7 +1209,7 @@ int main(int argc, char **argv)
 		DataCube *mom1 = NULL;
 		DataCube *mom2 = NULL;
 		DataCube *chan = NULL;
-		DataCube_create_moments(dataCube, maskCube, &mom0, &mom1, &mom2, &chan, use_wcs, true);
+		DataCube_create_moments(dataCube, maskCube, &mom0, &mom1, &mom2, &chan, NULL, use_wcs, true);
 		
 		// Save moment maps to disk
 		if(mom0 != NULL) DataCube_save(mom0, Path_get(path_mom0), overwrite, DESTROY);
@@ -1268,4 +1344,12 @@ int main(int argc, char **argv)
 	status("Pipeline finished.");
 	
 	return ERR_SUCCESS;
+}
+
+
+int main(int argc, char **argv)
+{
+	int n =1;
+	ensure(argc == 2, ERR_USER_INPUT, "Unexpected number of command line arguments.\nUsage: %s <parameter_file>", argv[0]);
+	return mainline(argv[1]);
 }

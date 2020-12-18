@@ -44,41 +44,45 @@ echo
 
 # Compile source files
 echo "  Compiling src/common.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/common.o -c src/common.c
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/common.o -c src/common.c
 echo "  Compiling src/statistics_flt.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/statistics_flt.o -c src/statistics_flt.c
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/statistics_flt.o -c src/statistics_flt.c
 echo "  Compiling src/statistics_dbl.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/statistics_dbl.o -c src/statistics_dbl.c
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/statistics_dbl.o -c src/statistics_dbl.c
+echo "  Compiling src/Table.c"
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/Table.o -c src/Table.c
 echo "  Compiling src/String.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/String.o -c src/String.c
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/String.o -c src/String.c
 echo "  Compiling src/Stack.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/Stack.o -c src/Stack.c
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/Stack.o -c src/Stack.c
 echo "  Compiling src/Path.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/Path.o -c src/Path.c
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/Path.o -c src/Path.c
 echo "  Compiling src/Array_dbl.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/Array_dbl.o -c src/Array_dbl.c
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/Array_dbl.o -c src/Array_dbl.c
 echo "  Compiling src/Array_siz.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/Array_siz.o -c src/Array_siz.c
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/Array_siz.o -c src/Array_siz.c
 echo "  Compiling src/Map.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/Map.o -c src/Map.c
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/Map.o -c src/Map.c
 echo "  Compiling src/Matrix.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/Matrix.o -c src/Matrix.c
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/Matrix.o -c src/Matrix.c
 echo "  Compiling src/LinkerPar.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/LinkerPar.o -c src/LinkerPar.c $1
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/LinkerPar.o -c src/LinkerPar.c $1
 echo "  Compiling src/Parameter.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/Parameter.o -c src/Parameter.c
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/Parameter.o -c src/Parameter.c
 echo "  Compiling src/Source.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/Source.o -c src/Source.c
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/Source.o -c src/Source.c
 echo "  Compiling src/Catalog.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/Catalog.o -c src/Catalog.c
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/Catalog.o -c src/Catalog.c
+echo "  Compiling src/Flagger.c"
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/Flagger.o -c src/Flagger.c
 echo "  Compiling src/WCS.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/WCS.o -c src/WCS.c
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/WCS.o -c src/WCS.c
 echo "  Compiling src/Header.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/Header.o -c src/Header.c
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/Header.o -c src/Header.c
 echo "  Compiling src/DataCube.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o src/DataCube.o -c src/DataCube.c $1
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o src/DataCube.o -c src/DataCube.c $1
 echo "  Compiling sofia.c"
-gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -O3 -o sofia src/common.o src/statistics_flt.o src/statistics_dbl.o src/String.o src/Stack.o src/Path.o src/Array_dbl.o src/Array_siz.o src/Map.o src/Matrix.o src/LinkerPar.o src/Parameter.o src/WCS.o src/Header.o src/DataCube.o src/Source.o src/Catalog.o sofia.c -lm -lwcs $1
+gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -o sofia src/common.o src/statistics_flt.o src/statistics_dbl.o src/Table.o src/String.o src/Stack.o src/Path.o src/Array_dbl.o src/Array_siz.o src/Map.o src/Matrix.o src/LinkerPar.o src/Parameter.o src/Flagger.o src/WCS.o src/Header.o src/DataCube.o src/Source.o src/Catalog.o sofia.c -lm -lwcs $1
 
 # Remove object files
 #rm -rf src/*.o
