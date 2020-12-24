@@ -47,6 +47,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 
+//#include "sofia.h"
 #include "src/common.h"
 #include "src/Table.h"
 #include "src/Path.h"
@@ -61,7 +62,6 @@
 #include "src/LinkerPar.h"
 
 
-
 // ----------------------------------------------------------------- //
 // This file contains the actual SoFiA pipeline that will read user  //
 // parameters and data files, call the requested processing modules  //
@@ -69,23 +69,23 @@
 // ----------------------------------------------------------------- //
 
 //int mainline(char *par_file, char *argv2, char *argv3)
-int mainline(double *dataPtr)
+//void mainline(const sofia_args *arg)
+void mainline(double *dataPtr, char *headerPtr, int datasize, int headersize)
 {
 
-	SOURCETYPE DATATYPE;
+	SOURCETYPE DATATYPE = MEM;
 	char *path_to_par = "sofia.par";
-	char *hdrPtr;
-/*	char *dataPtr;
-
-	// If argv2 and argv3 are NULL, we've been called in FITS mode
-	if (argv2 == NULL && argv3 == NULL) {
-		hdrPtr = dataPtr = NULL;
-	}
-	else { // data is in memory
-		hdrPtr = argv2;
-		dataPtr = (float *)argv3;
-	}
+/*
+	char *headerPtr = arg->headerPtr;
+	double *dataPtr = arg->dataPtr;
+	int datasize = arg->datasize;
+	int headersize = arg->headersize;
 */
+	// If headerPtr is NULL, we've been called in FITS mode
+	if (headerPtr == NULL) {
+		DATATYPE = FITS;
+		path_to_par = (char *)dataPtr;
+	}
 
 	// ---------------------------- //
 	// Record starting time         //
@@ -123,15 +123,6 @@ int mainline(double *dataPtr)
 		message("CPU:      OpenMP disabled");
 	#endif
 	message("Time:     %s", ctime(&start_time));
-	
-	
-	
-	// ---------------------------- //
-	// Check command line arguments //
-	// ---------------------------- //
-	
-	//ensure(argc == 2, ERR_USER_INPUT, "Unexpected number of command line arguments.\nUsage: %s <parameter_file>", argv[0]);
-	
 	
 	
 	// ---------------------------- //
@@ -471,7 +462,7 @@ int mainline(double *dataPtr)
 	}
 	else {
 		status("    - MEM mode");
-		DataCube_readMEM(dataCube, dataPtr);
+		DataCube_readMEM(dataCube, dataPtr,datasize,headerPtr,headersize);
 	}
 	// Search for values of infinity and append affected pixels to flagging region
 	// (Yes, some data cubes do contain those!)
@@ -1343,7 +1334,7 @@ int mainline(double *dataPtr)
 	// Print status message
 	status("Pipeline finished.");
 	
-	return ERR_SUCCESS;
+//  return ERR_SUCCESS;
 }
 
 
@@ -1351,5 +1342,14 @@ int main(int argc, char **argv)
 {
 	int n =1;
 	ensure(argc == 2, ERR_USER_INPUT, "Unexpected number of command line arguments.\nUsage: %s <parameter_file>", argv[0]);
-	return mainline(argv[1]);
+/*
+	sofia_args *arg;
+	arg->dataPtr = argv[1];
+	arg->datasize = 0;
+	arg->headerPtr = NULL;
+	arg->headersize = 0;
+	mainline(arg);
+*/
+	mainline(NULL,argv[1],1,1);
+	return 0;
 }

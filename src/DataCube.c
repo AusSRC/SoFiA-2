@@ -428,13 +428,16 @@ void add2dict(dict_t **dict, char *key, void *value) {
 }
 
 
+
 // Read data cube from memory arrays                                 //
 // ----------------------------------------------------------------- //
 // Arguments:                                                        //
 //                                                                   //
 //   (1) self     - Object self-reference.                           //
-//   (2) dataPtr - Pointer to flattened array of floats              //
-//   (3) header   - header obj
+//   (2) dataPtr - Pointer to flattened array of doubles             //
+//	 (3) datasize - size of data array                               //
+//   (4) headerPtr   - header metadatata                             //
+//   (5) headersize - size of header                                 //
 //                                                                   //
 // Return value:                                                     //
 //                                                                   //
@@ -452,11 +455,12 @@ void add2dict(dict_t **dict, char *key, void *value) {
 //   Author - ger063                                                 //
 //   Created - 15 Dec 2020                                           //
 // ----------------------------------------------------------------- //
-PUBLIC void DataCube_readMEM(DataCube *self, double *dataPtr)
+PUBLIC void DataCube_readMEM(DataCube *self, double *dataPtr, int datasize, char *headerPtr, int headersize)
 {
 	// Sanity checks
 	check_null(self);
 	check_null(dataPtr);
+	check_null(headerPtr);
 	//check_null(header);
 	self->DATATYPE = MEM;
 
@@ -464,34 +468,9 @@ PUBLIC void DataCube_readMEM(DataCube *self, double *dataPtr)
 
 	FILE *fp = fopen("sofia_test_datacube.fits", "rb");
 	ensure(fp != NULL, ERR_FILE_ACCESS, "Failed to open FITS file \'%s\'.", "sofia_test_datacube.fits");
-	// Read entire header into temporary array
-	char *header = NULL;
-	size_t header_size = 0;
-	bool end_reached = false;
 
-	while(!end_reached)
-	{
-		// (Re-)allocate memory as needed
-		header = (char *)memory_realloc(header, header_size + FITS_HEADER_BLOCK_SIZE, sizeof(char));
-
-		// Read header block
-		ensure(fread(header + header_size, 1, FITS_HEADER_BLOCK_SIZE, fp) == FITS_HEADER_BLOCK_SIZE, ERR_FILE_ACCESS, "FITS file ended unexpectedly while reading header.");
-
-		// Check if we have reached the end of the header
-		char *ptr = header + header_size;
-
-		while(!end_reached && ptr < header + header_size + FITS_HEADER_BLOCK_SIZE)
-		{
-			if(strncmp(ptr, "END", 3) == 0) end_reached = true;
-			else ptr += FITS_HEADER_LINE_SIZE;
-		}
-
-		// Set header size parameter
-		header_size += FITS_HEADER_BLOCK_SIZE;
-	}
-
-	self->header = Header_new(header, header_size, self->verbosity);
-	free(header);
+	self->header = Header_new(headerPtr, headersize, self->verbosity);
+	free(headerPtr);
 	// Extract crucial header elements
 	self->data_type    = Header_get_int(self->header, "BITPIX");
 	self->dimension    = Header_get_int(self->header, "NAXIS");
