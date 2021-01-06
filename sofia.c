@@ -68,24 +68,16 @@
 // and write out catalogues and images.                              //
 // ----------------------------------------------------------------- //
 
-//int mainline(char *par_file, char *argv2, char *argv3)
-//void mainline(const sofia_args *arg)
-void mainline(double *dataPtr, char *headerPtr, int datasize, int headersize)
+void mainline(double *dataPtr, int datasize, char *headerPtr, int headersize, char *path_to_par,int parsize)
 {
 
 	SOURCETYPE DATATYPE = MEM;
-	char *path_to_par = "sofia.par";
-/*
-	char *headerPtr = arg->headerPtr;
-	double *dataPtr = arg->dataPtr;
-	int datasize = arg->datasize;
-	int headersize = arg->headersize;
-*/
-	// If headerPtr is NULL, we've been called in FITS mode
-	if (headerPtr == NULL) {
+	// If dataPtr is NULL, we've been called in FITS mode
+	if (dataPtr == NULL) {
 		DATATYPE = FITS;
-		path_to_par = (char *)dataPtr;
 	}
+	message("\nIN sofia.mainline, hdrsize = %d",headersize);
+	message("PAR file: %s\n",path_to_par);
 
 	// ---------------------------- //
 	// Record starting time         //
@@ -773,9 +765,11 @@ void mainline(double *dataPtr, char *headerPtr, int datasize, int headersize)
 	// Terminate if no source finder is run, but no input mask is provided either
 	ensure(use_scfind || use_threshold || use_mask, ERR_USER_INPUT, "No mask provided and no source finder selected. Cannot proceed.");
 	
+	printf("DEBUG 2\n");
 	// Create temporary 8-bit mask to hold source finding output
 	DataCube *maskCubeTmp = DataCube_blank(DataCube_get_axis_size(dataCube, 0), DataCube_get_axis_size(dataCube, 1), DataCube_get_axis_size(dataCube, 2), 8, verbosity);
 	DataCube_copy_wcs(dataCube, maskCubeTmp);
+	printf("DEBUG 3");
 	DataCube_puthd_str(maskCubeTmp, "BUNIT", " ");
 	
 	// S+C finder
@@ -883,7 +877,7 @@ void mainline(double *dataPtr, char *headerPtr, int datasize, int headersize)
 	// ---------------------------- //
 	
 	DataCube *maskCube = NULL;
-	
+	printf("DEBUG 4");
 	if(use_mask)
 	{
 		// Load mask cube
@@ -1350,6 +1344,6 @@ int main(int argc, char **argv)
 	arg->headersize = 0;
 	mainline(arg);
 */
-	mainline(NULL,argv[1],1,1);
+	mainline(NULL,1,argv[1],1,NULL,1);
 	return 0;
 }

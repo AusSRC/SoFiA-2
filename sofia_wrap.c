@@ -174,7 +174,6 @@
 # define SWIG_TYPE_TABLE_NAME
 #endif
 
-
 /*
   You can use the SWIGRUNTIME and SWIGRUNTIMEINLINE macros for
   creating a static or dynamic library from the SWIG runtime code.
@@ -2668,7 +2667,7 @@ static swig_module_info swig_module = {swig_types, 1, 0, 0, 0, 0};
 
 
 #define SWIG_FILE_WITH_INIT
-void mainline(double* dataPtr, int datasize, char* headerPtr, int headersize);
+void mainline(double* dataPtr, int datasize, char* headerPtr, int headersize, char *path_to_par, int parsize);
 
 
 #ifndef SWIG_FILE_WITH_INIT
@@ -2679,8 +2678,8 @@ void mainline(double* dataPtr, int datasize, char* headerPtr, int headersize);
 #include <numpy/arrayobject.h>
 
 
-	void sofia_mainline(double* dataPtr, int datasize, char* headerPtr, int headersize) {
-		return mainline(dataPtr, datasize, headerPtr, headersize);
+	void sofia_mainline(double* dataPtr, int datasize, char *headerPtr, int headersize, char *path_to_par, int parsize) {
+		return mainline(dataPtr, datasize, headerPtr, headersize, path_to_par, parsize);
 	}
 
 
@@ -3433,24 +3432,29 @@ SWIG_AsVal_int (PyObject * obj, int *val)
 #ifdef __cplusplus
 extern "C" {
 #endif
-SWIGINTERN PyObject *_wrap_sofia_mainline(PyObject *SWIGUNUSEDPARM(self), PyObject *args) { // @suppress("Type cannot be resolved")
+SWIGINTERN PyObject *_wrap_sofia_mainline(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   double *arg1 = (double *) 0 ;
   int arg2 ;
   char *arg3 = (char *) 0 ;
   int arg4 ;
+  char *arg5 = (char *) 0 ;
+  int arg6 ;
   PyArrayObject *array1 = NULL ;
   int is_new_object1 = 0 ;
   int res3 ;
   char *buf3 = 0 ;
   int alloc3 = 0 ;
-  int val2;
   int val4 ;
-  int ecode2 = 0;
   int ecode4 = 0 ;
-  PyObject *swig_obj[4] ;
-  printf("IN _wrap_sofia_mainline\n");
-  if (!SWIG_Python_UnpackTuple(args, "sofia_mainline",4, 4, swig_obj)) SWIG_fail;
+  int res5 ;
+  char *buf5 = 0 ;
+  int alloc5 = 0 ;
+  int val6 ;
+  int ecode6 = 0 ;
+  PyObject *swig_obj[5] ;
+  
+  if (!SWIG_Python_UnpackTuple(args, "sofia_mainline", 5, 5, swig_obj)) SWIG_fail;
   {
     npy_intp size[1] = {
       -1 
@@ -3461,23 +3465,29 @@ SWIGINTERN PyObject *_wrap_sofia_mainline(PyObject *SWIGUNUSEDPARM(self), PyObje
     if (!array1 || !require_dimensions(array1, 1) ||
       !require_size(array1, size, 1)) SWIG_fail;
     arg1 = (double*) array_data(array1);
+    arg2 = (int) array_size(array1,0);
   }
-  ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "sofia_mainline" "', argument " "2"" of type '" "int""'");
-  }
-  arg2 = (int)(val2);
-  res3 = SWIG_AsCharPtrAndSize(swig_obj[2], &buf3, NULL, &alloc3);
+  res3 = SWIG_AsCharPtrAndSize(swig_obj[1], &buf3, NULL, &alloc3);
   if (!SWIG_IsOK(res3)) {
     SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "sofia_mainline" "', argument " "3"" of type '" "char *""'");
   }
   arg3 = (char *)(buf3);
-  ecode4 = SWIG_AsVal_int(swig_obj[3], &val4);
+  ecode4 = SWIG_AsVal_int(swig_obj[2], &val4);
   if (!SWIG_IsOK(ecode4)) {
     SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "sofia_mainline" "', argument " "4"" of type '" "int""'");
   } 
   arg4 = (int)(val4);
-  sofia_mainline(arg1,arg2,arg3,arg4);
+  res5 = SWIG_AsCharPtrAndSize(swig_obj[3], &buf5, NULL, &alloc5);
+  if (!SWIG_IsOK(res5)) {
+    SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "sofia_mainline" "', argument " "5"" of type '" "char *""'");
+  }
+  arg5 = (char *)(buf5);
+  ecode6 = SWIG_AsVal_int(swig_obj[4], &val6);
+  if (!SWIG_IsOK(ecode6)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode6), "in method '" "sofia_mainline" "', argument " "6"" of type '" "int""'");
+  } 
+  arg6 = (int)(val6);
+  sofia_mainline(arg1,arg2,arg3,arg4,arg5,arg6);
   resultobj = SWIG_Py_Void();
   {
     if (is_new_object1 && array1)
@@ -3486,6 +3496,7 @@ SWIGINTERN PyObject *_wrap_sofia_mainline(PyObject *SWIGUNUSEDPARM(self), PyObje
     }
   }
   if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
+  if (alloc5 == SWIG_NEWOBJ) free((char*)buf5);
   return resultobj;
 fail:
   {
@@ -3495,6 +3506,7 @@ fail:
     }
   }
   if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
+  if (alloc5 == SWIG_NEWOBJ) free((char*)buf5);
   return NULL;
 }
 

@@ -9,5 +9,11 @@ gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused
 # use in Python:
 
 import sofia
-
+import numpy as np
+a = [1.1,2.2,3.3]
+b = "header data blah blah"
+c = len(b)
+d = "sofia.par"
+e = len(d)
+sofia.sofia_mainline(a,b,c,d,e)
 

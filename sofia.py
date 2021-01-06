@@ -62,7 +62,7 @@ class _SwigNonDynamicMeta(type):
 
 
 
-def sofia_mainline(dataPtr, datasize, headerPtr, headersize):
-    return _sofia.sofia_mainline(dataPtr, datasize, headerPtr, headersize)
+def sofia_mainline(dataPtr, headerPtr, headersize, path_to_par, parsize):
+    return _sofia.sofia_mainline(dataPtr, headerPtr, headersize, path_to_par, parsize)
 
 

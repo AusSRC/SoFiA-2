@@ -86,6 +86,8 @@ if __name__ == "__main__":
     hdr,dataPtr = extractFromFits(fitsfile)
     hdrstr,hdrsize = dict2FITSstr(hdr)
     datalen = dataPtr.size
+    path_to_par = "sofia.par"
+    parsize = len(path_to_par)
     # pass data to sofia C library - we need to swap the byte order
-    sofia.sofia_mainline(dataPtr,datalen,hdrstr,hdrsize)
+    sofia.sofia_mainline(dataPtr,hdrstr,hdrsize,path_to_par,parsize)
     
