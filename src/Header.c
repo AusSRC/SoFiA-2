@@ -388,6 +388,9 @@ PUBLIC int Header_get_str(const Header *self, const char *key, char *value)
 	}
 	
 	const char *left = strchr(buffer, '\'');
+	if (left == NULL){
+		printf("FITS ERR: %s",buffer);
+	}
 	ensure(left != NULL, ERR_USER_INPUT, "FITS header entry is not a string.");
 	
 	const char *right = strchr(left + 1, '\'');
@@ -414,7 +417,11 @@ PUBLIC String *Header_get_string(const Header *self, const char *key)
 	else
 	{
 		// Keyword does exist --> remove quotation marks
+		printf("FITS: %s",key);
 		const char *left = strchr(buffer, '\'');
+		if (left == NULL){
+			printf("FITS ERROR: %s",buffer);
+		}
 		ensure(left != NULL, ERR_USER_INPUT, "FITS header entry is not a string.");
 		
 		const char *right = strchr(left + 1, '\'');

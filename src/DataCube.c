@@ -455,7 +455,7 @@ void add2dict(dict_t **dict, char *key, void *value) {
 //   Author - ger063                                                 //
 //   Created - 15 Dec 2020                                           //
 // ----------------------------------------------------------------- //
-PUBLIC void DataCube_readMEM(DataCube *self, double *dataPtr, int datasize, char *headerPtr, int headersize)
+PUBLIC void DataCube_readMEM(DataCube *self, float *dataPtr, int datasize, char *headerPtr, int headersize)
 {
 	// Sanity checks
 	check_null(self);
@@ -463,11 +463,10 @@ PUBLIC void DataCube_readMEM(DataCube *self, double *dataPtr, int datasize, char
 	check_null(headerPtr);
 	//check_null(header);
 	self->DATATYPE = MEM;
-
 	// Create Header object and de-allocate memory again
 
-	FILE *fp = fopen("sofia_test_datacube.fits", "rb");
-	ensure(fp != NULL, ERR_FILE_ACCESS, "Failed to open FITS file \'%s\'.", "sofia_test_datacube.fits");
+	//FILE *fp = fopen("sofia_test_datacube.fits", "rb");
+	//ensure(fp != NULL, ERR_FILE_ACCESS, "Failed to open FITS file \'%s\'.", "sofia_test_datacube.fits");
 
 	self->header = Header_new(headerPtr, headersize, self->verbosity);
 	free(headerPtr);
@@ -568,9 +567,15 @@ PUBLIC void DataCube_readMEM(DataCube *self, double *dataPtr, int datasize, char
 	message("  Axis sizes:   %zu, %zu, %zu", self->axis_size[0], self->axis_size[1], self->axis_size[2]);
 	message("  Region:       %zu-%zu, %zu-%zu, %zu-%zu", x_min, x_max, y_min, y_max, z_min, z_max);
 	message("  Memory used:  %.1f MB", (double)(data_size * self->word_size) / MEGABYTE);
+	printf("Reading DataCube data with the following specifications:");
+	printf("  Data type:    %d", self->data_type);
+	printf("  No. of axes:  %zu", self->dimension);
+	printf("  Axis sizes:   %zu, %zu, %zu", self->axis_size[0], self->axis_size[1], self->axis_size[2]);
+	printf("  Region:       %zu-%zu, %zu-%zu, %zu-%zu", x_min, x_max, y_min, y_max, z_min, z_max);
+	printf("  Memory used:  %.1f MB", (double)(data_size * self->word_size) / MEGABYTE);
 
 	// Store pointer to data array
-	self->data = dataPtr;
+	self->data = (char *)dataPtr;
 
 	// Update object properties
 	self->data_size = data_size;
@@ -582,7 +587,7 @@ PUBLIC void DataCube_readMEM(DataCube *self, double *dataPtr, int datasize, char
 	Header_adjust_wcs_to_subregion(self->header, x_min, x_max, y_min, y_max, z_min, z_max);
 
 	// Swap byte order if required
-	DataCube_swap_byte_order(self);
+//	DataCube_swap_byte_order(self);
 
 	// Handle BSCALE and BZERO if necessary
 	const double bscale = Header_get_flt(self->header, "BSCALE");
@@ -649,6 +654,9 @@ PUBLIC void DataCube_readMEM(DataCube *self, double *dataPtr, int datasize, char
 		}
 	}
 
+	fout = fopen("data_MEM.txt","w");
+	fwrite(self->data,self->word_size, self->data_size, fout);
+	fclose(fout);
 	return;
 }
 
@@ -717,6 +725,13 @@ PUBLIC void DataCube_readFITS(DataCube *self, const char *filename, const Array_
 		header_size += FITS_HEADER_BLOCK_SIZE;
 	}
 	
+	for (size_t i=0;i<36;i++){
+		for (size_t j=0;j<80;j++){
+			printf("%c",header[j+(i*80)]);
+		}
+		printf("\n");
+	}
+//	exit(0);
 	// Check if valid FITS file
 	ensure(strncmp(header, "SIMPLE", 6) == 0, ERR_USER_INPUT, "Missing \'SIMPLE\' keyword; file does not appear to be a FITS file.");
 	
@@ -887,6 +902,7 @@ PUBLIC void DataCube_readFITS(DataCube *self, const char *filename, const Array_
 	fclose(fp);
 	
 	// Swap byte order if required
+	FILE *fout;
 	DataCube_swap_byte_order(self);
 	
 	// Handle BSCALE and BZERO if necessary

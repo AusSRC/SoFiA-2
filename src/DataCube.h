@@ -86,7 +86,7 @@ PUBLIC void       DataCube_delete           (DataCube *self);
 // Loading data into the cube
 PUBLIC void       DataCube_load             (DataCube *self, char *dataSrc, const Array_siz *region, SOURCETYPE source, char *header);
 PUBLIC void       DataCube_readFITS         (DataCube *self, const char *filename, const Array_siz *region);
-PUBLIC void       DataCube_readMEM          (DataCube *self, double *dataPtr, int datasize, char *headerPtr, int headersize);
+PUBLIC void       DataCube_readMEM          (DataCube *self, float *dataPtr, int datasize, char *headerPtr, int headersize);
 // Saving to FITS format
 PUBLIC void       DataCube_save             (const DataCube *self, const char *filename, const bool overwrite, const bool preserve);
 
