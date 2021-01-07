@@ -467,11 +467,7 @@ PUBLIC void DataCube_readMEM(DataCube *self, float *dataPtr, int datasize, char 
 	self->DATATYPE = MEM;
 	// Create Header object and de-allocate memory again
 
-	//FILE *fp = fopen("sofia_test_datacube.fits", "rb");
-	//ensure(fp != NULL, ERR_FILE_ACCESS, "Failed to open FITS file \'%s\'.", "sofia_test_datacube.fits");
-
 	self->header = Header_new(headerPtr, headersize, self->verbosity);
-	//free(headerPtr);
 	// Extract crucial header elements
 	self->data_type    = Header_get_int(self->header, "BITPIX");
 	self->dimension    = Header_get_int(self->header, "NAXIS");
@@ -589,7 +585,6 @@ PUBLIC void DataCube_readMEM(DataCube *self, float *dataPtr, int datasize, char 
 	Header_adjust_wcs_to_subregion(self->header, x_min, x_max, y_min, y_max, z_min, z_max);
 
 	// Swap byte order if required
-//	DataCube_swap_byte_order(self);
 
 	// Handle BSCALE and BZERO if necessary
 	const double bscale = Header_get_flt(self->header, "BSCALE");
