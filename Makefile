@@ -23,9 +23,9 @@ TARGET        = _sofia.so # Use this kind of target for dynamic loading
 exec_prefix   = /usr/bin
 
 CC            = gcc
-CFLAGS        = -fPIC --std=c99 -Wno-incompatible-pointer-types -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O0 -g3
+CFLAGS        = -fPIC --std=c99 -Wno-incompatible-pointer-types -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -fopenmp
 INCLUDES      = -I/usr/include/python3.8 -I ~/.local/lib/python3.8/site-packages/numpy/core/include
-LDFLAGS       = --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O0 -g3 -shared -fopenmp
+LDFLAGS       = --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -shared -fopenmp
 LIBS          = -lm -lwcs
 
 # SWIG Options

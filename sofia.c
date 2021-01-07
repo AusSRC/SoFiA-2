@@ -414,7 +414,7 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 			ensure(!Path_file_is_readable(path_mom0) && !Path_file_is_readable(path_mom1) && !Path_file_is_readable(path_mom2), ERR_FILE_ACCESS,
 				"Moment maps already exist. Please delete the files\n"
 				"       or set \'output.overwrite = true\'.");
-			ensure(!Path_file_is_readable(path_chan), ERR_FILE_ACCESS,dtypes
+			ensure(!Path_file_is_readable(path_chan), ERR_FILE_ACCESS,
 				"Channel map already exists. Please delete the file\n"
 				"       or set \'output.overwrite = true\'.");
 		}
