@@ -68,17 +68,16 @@
 // and write out catalogues and images.                              //
 // ----------------------------------------------------------------- //
 
-void mainline(double *dataPtr, int datasize, char *headerPtr, int headersize, char *path_to_par,int parsize)
+void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, char *path_to_par,int parsize)
 {
 
 	SOURCETYPE DATATYPE = MEM;
-	// If dataPtr is NULL, we've been called in FITS mode
+	// If dataPtr is NULL, we've been called in FITS/standalone mode
 	if (dataPtr == NULL) {
 		DATATYPE = FITS;
 	}
 	message("\nIN sofia.mainline, hdrsize = %d",headersize);
 	message("PAR file: %s\n",path_to_par);
-
 	// ---------------------------- //
 	// Record starting time         //
 	// ---------------------------- //
@@ -415,7 +414,7 @@ void mainline(double *dataPtr, int datasize, char *headerPtr, int headersize, ch
 			ensure(!Path_file_is_readable(path_mom0) && !Path_file_is_readable(path_mom1) && !Path_file_is_readable(path_mom2), ERR_FILE_ACCESS,
 				"Moment maps already exist. Please delete the files\n"
 				"       or set \'output.overwrite = true\'.");
-			ensure(!Path_file_is_readable(path_chan), ERR_FILE_ACCESS,
+			ensure(!Path_file_is_readable(path_chan), ERR_FILE_ACCESS,dtypes
 				"Channel map already exists. Please delete the file\n"
 				"       or set \'output.overwrite = true\'.");
 		}
@@ -765,11 +764,9 @@ void mainline(double *dataPtr, int datasize, char *headerPtr, int headersize, ch
 	// Terminate if no source finder is run, but no input mask is provided either
 	ensure(use_scfind || use_threshold || use_mask, ERR_USER_INPUT, "No mask provided and no source finder selected. Cannot proceed.");
 	
-	printf("DEBUG 2\n");
 	// Create temporary 8-bit mask to hold source finding output
 	DataCube *maskCubeTmp = DataCube_blank(DataCube_get_axis_size(dataCube, 0), DataCube_get_axis_size(dataCube, 1), DataCube_get_axis_size(dataCube, 2), 8, verbosity);
 	DataCube_copy_wcs(dataCube, maskCubeTmp);
-	printf("DEBUG 3");
 	DataCube_puthd_str(maskCubeTmp, "BUNIT", " ");
 	
 	// S+C finder
@@ -877,7 +874,6 @@ void mainline(double *dataPtr, int datasize, char *headerPtr, int headersize, ch
 	// ---------------------------- //
 	
 	DataCube *maskCube = NULL;
-	printf("DEBUG 4");
 	if(use_mask)
 	{
 		// Load mask cube
@@ -1344,6 +1340,6 @@ int main(int argc, char **argv)
 	arg->headersize = 0;
 	mainline(arg);
 */
-	mainline(NULL,1,argv[1],1,NULL,1);
+	mainline(NULL,1,NULL,1,argv[1],1);
 	return 0;
 }

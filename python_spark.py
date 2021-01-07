@@ -1,5 +1,19 @@
 '''
-This is a small test script to test out Swig SoFiA-2
+This is a small test script to test out Swig SoFiA-2 as a shared library.
+
+The sofia C library expects a pointer to the data, FITS header info and a parameter file.
+The python script therefore needs to pass:
+    1. a numpy 1D array of float32 (little-endian),
+    2. a constructed string of header data identical to that stored in a FITS file,
+    3. the path to the user parameter file - the parameter "input.source" should be set to MEM.
+
+The function 'dict2FITSstr()' below, shows how to construct a valid FITS header string from 
+a dictionary of header information. 
+
+The function 'extractFromFits()' shows how to prepare a multi-dimensional numpy data array:
+    data3D.ravel().astype('<f4')
+    
+The last line shows how to call the sofia library.
 
 Created on 17Dec 2020
 @author: ger063
@@ -39,55 +53,52 @@ def extractFromFits(fitsfile):
             hdr[key] = hdul[0].header[key]
             data3D = hdul[0].data
         hdul.info()
-    return hdr,data3D.ravel()
+        # delete the END key, if there
+        hdr.pop("END",None)
+    return hdr,data3D.ravel().astype('<f4')
 
 def dict2FITSstr(hdr_dict):
     ''' Convert the header dict to a single string matching 
         the FITS format.
     '''
-    str = ""
+    my_str = ""
     key = ""
+    val = ""
     hdrsize = 0
     for key in hdr_dict.keys():
-        str += key[0:8] + " " * ((FITS_HEADER_KEYWORD_SIZE - len(key)) if len(key) < FITS_HEADER_KEYWORD_SIZE else 0)
-        str += "= "
+        my_str += key[0:8] + " " * ((FITS_HEADER_KEYWORD_SIZE - len(key)) if len(key) < FITS_HEADER_KEYWORD_SIZE else 0)
+        my_str += "= "
         if isinstance(hdr_dict[key],bool):
             if hdr_dict[key]:
-                hdr_dict[key] = "TRUE"
+                hdr_dict[key] = "T"
             else:
-                hdr_dict[key] = "FALSE"
-        val = "%s" % hdr_dict[key]
-        str += val[0:70] + " " * ((FITS_HEADER_VALUE_SIZE - len(val)) if len(val) < FITS_HEADER_VALUE_SIZE else 0)
+                hdr_dict[key] = "F"
+        if isinstance(hdr_dict[key],str) and not (key in ["SIMPLE","EXTEND","COMMENT","HISTORY"]):
+                val = "'%s'" % hdr_dict[key]
+        else:
+            val = "%s" % hdr_dict[key]
+        my_str += val[0:70] + " " * ((FITS_HEADER_VALUE_SIZE - len(val)) if len(val) < FITS_HEADER_VALUE_SIZE else 0)
         hdrsize += 80
     if not key == "END":
-        str +=  "END" + " " * (FITS_HEADER_LINE_SIZE - 3)
+        my_str +=  "END" + " " * (FITS_HEADER_LINE_SIZE - 3)
         hdrsize += 80
     
     pad = (FITS_HEADER_BLOCK_SIZE - hdrsize) if (hdrsize < FITS_HEADER_BLOCK_SIZE) else (FITS_HEADER_BLOCK_SIZE - (hdrsize % FITS_HEADER_BLOCK_SIZE))
     for i in range(pad):
-        str += " "
+        my_str += " "
     hdrsize += pad
-    return str,hdrsize
+    return my_str,hdrsize
 
-def run_SoFiA(par,hdr,data):
-    ''' Run SoFiA2 shared lib '''
-    if DEBUG:
-        logging.info("Thread SOFIA: starting")
-    sofia.mainline(par,hdr,data)
-    if DEBUG:
-        logging.info("Thread SOFIA: finishing")
-    
 
 if __name__ == "__main__":
     
     fitsfile = sys.argv[1]
-    parameter_file = sys.argv[2]
     # Load some data into memory
     hdr,dataPtr = extractFromFits(fitsfile)
     hdrstr,hdrsize = dict2FITSstr(hdr)
     datalen = dataPtr.size
     path_to_par = "sofia.par"
     parsize = len(path_to_par)
-    # pass data to sofia C library - we need to swap the byte order
+    # pass off to sofia C library
     sofia.sofia_mainline(dataPtr,hdrstr,hdrsize,path_to_par,parsize)
     
