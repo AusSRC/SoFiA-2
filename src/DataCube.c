@@ -303,7 +303,9 @@ PUBLIC void DataCube_delete(DataCube *self)
 	if(self != NULL)
 	{
 		Header_delete(self->header);
-		free(self->data);
+		if (self->DATATYPE == FITS){    // in MEM mode, numpy takes care of the data destruction
+			free(self->data);
+		}
 		free(self);
 	}
 	
@@ -469,7 +471,7 @@ PUBLIC void DataCube_readMEM(DataCube *self, float *dataPtr, int datasize, char 
 	//ensure(fp != NULL, ERR_FILE_ACCESS, "Failed to open FITS file \'%s\'.", "sofia_test_datacube.fits");
 
 	self->header = Header_new(headerPtr, headersize, self->verbosity);
-	free(headerPtr);
+	//free(headerPtr);
 	// Extract crucial header elements
 	self->data_type    = Header_get_int(self->header, "BITPIX");
 	self->dimension    = Header_get_int(self->header, "NAXIS");
