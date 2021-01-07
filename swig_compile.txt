@@ -6,14 +6,4 @@ gcc -fPIC --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-
 
 gcc --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -shared *.o -fopenmp -lm -lwcs -o _sofia.so
 
-# use in Python:
-
-import sofia
-import numpy as np
-a = [1.1,2.2,3.3]
-b = "header data blah blah"
-c = len(b)
-d = "sofia.par"
-e = len(d)
-sofia.sofia_mainline(a,b,c,d,e)
 
