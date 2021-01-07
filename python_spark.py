@@ -66,22 +66,22 @@ def dict2FITSstr(hdr_dict):
     val = ""
     hdrsize = 0
     for key in hdr_dict.keys():
-        my_str += key[0:8] + " " * ((FITS_HEADER_KEYWORD_SIZE - len(key)) if len(key) < FITS_HEADER_KEYWORD_SIZE else 0)
+        my_str += key[0:FITS_HEADER_KEYWORD_SIZE] + " " * ((FITS_HEADER_KEYWORD_SIZE - len(key)) if len(key) < FITS_HEADER_KEYWORD_SIZE else 0)
         my_str += "= "
         if isinstance(hdr_dict[key],bool):
             if hdr_dict[key]:
                 hdr_dict[key] = "T"
             else:
                 hdr_dict[key] = "F"
-        if isinstance(hdr_dict[key],str) and not (key in ["SIMPLE","EXTEND","COMMENT","HISTORY"]):
+        if isinstance(hdr_dict[key],str) and not (key in ["SIMPLEFITS_HEADER_VALUE_SIZE","EXTEND","COMMENT","HISTORY"]):
                 val = "'%s'" % hdr_dict[key]
         else:
             val = "%s" % hdr_dict[key]
-        my_str += val[0:70] + " " * ((FITS_HEADER_VALUE_SIZE - len(val)) if len(val) < FITS_HEADER_VALUE_SIZE else 0)
-        hdrsize += 80
+        my_str += val[0:FITS_HEADER_VALUE_SIZE] + " " * ((FITS_HEADER_VALUE_SIZE - len(val)) if len(val) < FITS_HEADER_VALUE_SIZE else 0)
+        hdrsize += FITS_HEADER_LINE_SIZE
     if not key == "END":
         my_str +=  "END" + " " * (FITS_HEADER_LINE_SIZE - 3)
-        hdrsize += 80
+        hdrsize += FITS_HEADER_LINE_SIZE
     
     pad = (FITS_HEADER_BLOCK_SIZE - hdrsize) if (hdrsize < FITS_HEADER_BLOCK_SIZE) else (FITS_HEADER_BLOCK_SIZE - (hdrsize % FITS_HEADER_BLOCK_SIZE))
     for i in range(pad):
@@ -89,15 +89,24 @@ def dict2FITSstr(hdr_dict):
     hdrsize += pad
     return my_str,hdrsize
 
+def usage():
+    print("Usage: python3 python_spark.py <path-to-FITS-file> <path-to-parameter-file>")
+
 
 if __name__ == "__main__":
-    
+   
+    if len(sys.argv)<3:
+        usage()
+        sys.exit(0)
+         
+    # Load some test data into memory
     fitsfile = sys.argv[1]
-    # Load some data into memory
     hdr,dataPtr = extractFromFits(fitsfile)
+    # Format the header info appropriately
     hdrstr,hdrsize = dict2FITSstr(hdr)
+    
     datalen = dataPtr.size
-    path_to_par = "sofia.par"
+    path_to_par = sys.argv[2]
     parsize = len(path_to_par)
     # pass off to sofia C library
     sofia.sofia_mainline(dataPtr,hdrstr,hdrsize,path_to_par,parsize)
