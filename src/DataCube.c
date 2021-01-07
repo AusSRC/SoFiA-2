@@ -653,10 +653,6 @@ PUBLIC void DataCube_readMEM(DataCube *self, float *dataPtr, int datasize, char 
 			self->word_size = 4;
 		}
 	}
-
-	fout = fopen("data_MEM.txt","w");
-	fwrite(self->data,self->word_size, self->data_size, fout);
-	fclose(fout);
 	return;
 }
 
