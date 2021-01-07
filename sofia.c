@@ -1332,14 +1332,6 @@ int main(int argc, char **argv)
 {
 	int n =1;
 	ensure(argc == 2, ERR_USER_INPUT, "Unexpected number of command line arguments.\nUsage: %s <parameter_file>", argv[0]);
-/*
-	sofia_args *arg;
-	arg->dataPtr = argv[1];
-	arg->datasize = 0;
-	arg->headerPtr = NULL;
-	arg->headersize = 0;
-	mainline(arg);
-*/
 	mainline(NULL,1,NULL,1,argv[1],1);
 	return 0;
 }
