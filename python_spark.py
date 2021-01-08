@@ -105,7 +105,6 @@ if __name__ == "__main__":
     # Format the header info appropriately
     hdrstr,hdrsize = dict2FITSstr(hdr)
     
-    datalen = dataPtr.size
     path_to_par = sys.argv[2]
     parsize = len(path_to_par)
     # pass off to sofia C library
