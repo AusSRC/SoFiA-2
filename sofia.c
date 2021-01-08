@@ -72,12 +72,11 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 {
 
 	SOURCETYPE DATATYPE = MEM;
-	// If dataPtr is NULL, we've been called in FITS/standalone mode
+	// If dataPtr is NULL, we've been called in standalone mode, so data will come from FITS file
 	if (dataPtr == NULL) {
 		DATATYPE = FITS;
 	}
 	message("\nIN sofia.mainline, hdrsize = %d",headersize);
-	message("PAR file: %s\n",path_to_par);
 	// ---------------------------- //
 	// Record starting time         //
 	// ---------------------------- //
@@ -133,8 +132,6 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 	// Load user parameters         //
 	// ---------------------------- //
 	
-	//message("Loading user parameter file: \'%s\'.\n", argv[1]);
-	//Parameter_load(par, argv[1], PARAMETER_UPDATE);
 	message("Loading user parameter file: \'%s\'.\n", path_to_par);
 	Parameter_load(par, path_to_par, PARAMETER_UPDATE);
 	
@@ -207,9 +204,11 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 	const double rel_threshold   = Parameter_get_flt(par, "reliability.threshold");
 	const double rel_fmin        = Parameter_get_flt(par, "reliability.fmin");
 	
-	// For defining the type of data source - file, memory etc
-	if (strcmp(Parameter_get_str(par,"input.source"), "FITS") == 0) DATATYPE = FITS;
-	else if (strcmp(Parameter_get_str(par,"input.source"), "MEM") == 0) DATATYPE = MEM;
+	// For defining the type of data source - file, memory etc - only applies if running as a library.
+	if (DATATYPE == MEM){
+		if (strcmp(Parameter_get_str(par,"input.source"), "FITS") == 0) DATATYPE = FITS;
+		else if (strcmp(Parameter_get_str(par,"input.source"), "MEM") == 0) DATATYPE = MEM;
+	}
 
 	unsigned int autoflag_mode = 0;
 	if     (strcmp(Parameter_get_str(par, "flag.auto"), "channels") == 0) autoflag_mode = 1;
