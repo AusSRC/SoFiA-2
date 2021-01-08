@@ -11,8 +11,7 @@ This will install numpy in your ~/.local/lib/python3/site-packages directory. Fo
 Now compile as follows:
 
 1. "make clean"
-2 "swig -python sofia.i"
-3. "make"
+2. "make"
 
 Read the comments in the example wrapper file "python_spark.py" to see how to run it.
 
