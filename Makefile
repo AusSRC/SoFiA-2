@@ -3,8 +3,6 @@
 # SWIG Sofia Makefile
 #
 #        SRCS       = C source files
-#        CXXSRCS    = C++ source files
-#        OBJCSRCS   = Objective-C source files
 #        OBJS       = Additional .o files (compiled previously)
 #        INTERFACE  = SWIG interface file
 #        TARGET     = Name of target module or executable
