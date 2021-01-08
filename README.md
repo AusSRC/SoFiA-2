@@ -2,15 +2,21 @@
 
 This version is used to create a dynamic shared library "_sofia.so" (_) that can be called from Python. It allows data sources to be memory arrays, rather than reading in a FITS file.
 
-Ensure you have the dependency WCSLIB mentioned below, as well as SWIG and compile as follows:
+Ensure you have the dependency WCSLIB mentioned below, as well as SWIG installed. You will also need numpy and in particular the numpy swig extensions:
 
-1. "swig -python sofia.i"
-2. "make clean"
+    pip3 install numpy
+
+This will install numpy in your ~/.local/lib/python3/site-packages directory. For me, using pip did not install the swig extensions successfully, so I downloaded numpy-1.19.4, found the numpy.i and pyfragments.swg files (under tools/swig) and copied them across to my build directory.
+
+Now compile as follows:
+
+1. "make clean"
+2 "swig -python sofia.i"
 3. "make"
 
 Read the comments in the example wrapper file "python_spark.py" to see how to run it.
 
-To compile the stand-alone version, ignore the above, just run "./compile.sh"
+To compile the stand-alone version, ignore the above, just run "./compile.sh -fopenmp"
 
 # SoFiA 2
 
