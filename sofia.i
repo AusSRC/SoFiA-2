@@ -1,4 +1,4 @@
-/* sofia.i - swig wrapper for sofia library code */
+/* sofia.i - swig wrapper interface declarations for sofia library code */
 %module sofia
 
 %{

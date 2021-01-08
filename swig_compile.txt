@@ -1,4 +1,5 @@
-# Steps to compile up the swig wrapper:
+# Manual steps to compile up the swig wrapper (it's recommended to just use the 
+# supplied Makefile and run 'make'):
 
 swig -python sofia.i
 
