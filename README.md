@@ -1,6 +1,6 @@
 # Swig-SoFiA 2
 
-This version is used to create a dynamic shared library "_sofia.so" (_) that can be called from Python. It allows data sources to be memory arrays, rather than reading in a FITS file.
+This version is used to create a dynamic shared library \_sofia.so\ that can be called from Python. It allows data sources to be memory arrays, rather than reading in a FITS file.
 
 Ensure you have the dependency WCSLIB mentioned below, as well as SWIG installed. You will also need numpy and in particular the numpy swig extensions:
 
