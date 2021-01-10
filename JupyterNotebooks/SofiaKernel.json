@@ -1,0 +1,20 @@
+{
+ "display_name": "pySpark SoFiA Testing (Spark 2.3.0, python 3.6, increased resources)",
+ "language": "python",
+ "argv": [
+  "/home/hduser/.virtualenvs/Elephas/bin/python",
+  "-m",
+  "ipykernel_launcher",
+  "-f",
+  "{connection_file}"
+ ],
+ "env": {
+  "PYSPARK_PYTHON": "/home/hduser/.virtualenvs/Elephas/bin/python",
+  "PYSPARK_DRIVER_PYTHON": "/home/hduser/.virtualenvs/Elephas/bin/python",
+  "SPARK_HOME": "/opt/cloudera/parcels/SPARK2/lib/spark2",
+  "PYTHONPATH": "/opt/cloudera/parcels/SPARK2/lib/spark2/python/lib/py4j-0.10.7-src.zip:/opt/cloudera/parcels/SPARK2/lib/spark2/python",
+  "PYTHONSTARTUP": "/opt/cloudera/parcels/SPARK2/lib/spark2/python/pyspark/shell.py",
+  "PYSPARK_SUBMIT_ARGS": "--master yarn --packages com.github.astrolabsoftware:spark-fits_2.11:0.9.0 --py-files 'hdfs:///user/hduser/PythonLibraries/myLib.py' --archives 'hdfs:///user/hduser/SharedObjectDLLs/example.zip#example' --conf 'spark.executor.extraLibraryPath=:./example' --conf 'spark.driver.extraLibraryPath=:./example'  --executor-memory 6g --driver-memory 4g --executor-cores 4 --conf spark.rpc.message.maxSize=1024 --conf spark.executor.memoryOverhead='4g' --conf spark.driver.memoryOverhead='4g' --conf spark.yarn.executor.memoryOverhead='4g' --conf spark.kryoserializer.buffer.max='512m' --conf spark.local.dir='/mnt/FITs/Spark/tmp/' --conf 'spark.driver.extraJavaOptions=-Djava.io.tmpdir=/mnt/FITs/Spark/tmp/'  pyspark-shell",
+  "ELEPHAS": "True"
+ }
+}
