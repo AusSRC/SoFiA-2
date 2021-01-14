@@ -38,6 +38,17 @@
 
 #include "common.h"
 
+const char *ERRSTR[9] = {
+		"SUCCESS",
+		"GENERAL FAILURE",
+		"NULL PTR",
+		"MEM ALLOC",
+		"INDEX RANGE",
+		"FILE ACCESS",
+		"INT OVRFLOW",
+		"USER INPUT",
+		"NO SRC FOUND"
+};
 
 
 // ----------------------------------------------------------------- //

@@ -106,17 +106,6 @@
 #define ERR_USER_INPUT   7
 #define ERR_NO_SRC_FOUND 8
 
-const char *ERRSTR[9] = {
-		"SUCCESS",
-		"GENERAL FAILURE",
-		"NULL PTR",
-		"MEM ALLOC",
-		"INDEX RANGE",
-		"FILE ACCESS",
-		"INT OVRFLOW",
-		"USER INPUT",
-		"NO SRC FOUND"
-};
 
 // Generic compile time check; should result in a compiler error if
 // condition is false due to attempt to create array of negative size.
