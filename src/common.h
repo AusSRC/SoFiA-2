@@ -106,7 +106,7 @@
 #define ERR_USER_INPUT   7
 #define ERR_NO_SRC_FOUND 8
 
-const char *ERRTYPE[9] = {
+const char *ERRSTR[9] = {
 		"SUCCESS",
 		"GENERAL FAILURE",
 		"NULL PTR",
