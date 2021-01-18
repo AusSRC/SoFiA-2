@@ -331,9 +331,11 @@ PUBLIC size_t Catalog_get_size(const Catalog *self)
 //   are plain text ASCII, VOTable XML format and SQL format.        //
 // ----------------------------------------------------------------- //
 
-PUBLIC void Catalog_save(const Catalog *self, const char *filename, const file_format format, const bool overwrite)
+PUBLIC void Catalog_save(const Catalog *self, const char *filename, const file_format format, const bool overwrite, const OUTTYPE OUTPUTS)
 {
 	// Sanity checks
+	if(OUTPUTS == NONE) return;  // No output required
+
 	check_null(self);
 	check_null(filename);
 	ensure(strlen(filename), ERR_USER_INPUT, "File name is empty.");

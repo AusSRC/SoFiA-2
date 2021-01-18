@@ -63,7 +63,7 @@ PUBLIC  bool     Catalog_source_exists (const Catalog *self, const Source *src, 
 
 PUBLIC  size_t   Catalog_get_size      (const Catalog *self);
 
-PUBLIC  void     Catalog_save          (const Catalog *self, const char *filename, const file_format format, const bool overwrite);
+PUBLIC  void     Catalog_save          (const Catalog *self, const char *filename, const file_format format, const bool overwrite, const OUTTYPE OUTTYPES);
 
 // Private methods
 PRIVATE void     Catalog_append_memory (Catalog *self);

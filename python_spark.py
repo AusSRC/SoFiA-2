@@ -110,3 +110,5 @@ if __name__ == "__main__":
     # pass off to sofia C library
     sofia.sofia_mainline(dataPtr,hdrstr,hdrsize,path_to_par,parsize)
     
+    print("\nReturned to Python caller\n")
+    

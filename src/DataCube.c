@@ -995,9 +995,11 @@ PUBLIC void DataCube_readFITS(DataCube *self, const char *filename, const Array_
 //   will be overwritten only if overwrite is set to true.           //
 // ----------------------------------------------------------------- //
 
-PUBLIC void DataCube_save(const DataCube *self, const char *filename, const bool overwrite, const bool preserve)
+PUBLIC void DataCube_save(const DataCube *self, const char *filename, const bool overwrite, const bool preserve,const OUTTYPE OUTPUTS)
 {
 	// Sanity checks
+	if (OUTPUTS == NONE) return;  // No output required
+
 	check_null(self);
 	check_null(filename);
 	ensure(strlen(filename), ERR_USER_INPUT, "Empty file name provided.");
@@ -5738,7 +5740,7 @@ PUBLIC void DataCube_create_moments(const DataCube *self, const DataCube *mask, 
 //   leted again.                                                    //
 // ----------------------------------------------------------------- //
 
-PUBLIC void DataCube_create_cubelets(const DataCube *self, const DataCube *mask, const Catalog *cat, const char *basename, const bool overwrite, bool use_wcs, bool physical, const size_t margin)
+PUBLIC void DataCube_create_cubelets(const DataCube *self, const DataCube *mask, const Catalog *cat, const char *basename, const bool overwrite, bool use_wcs, bool physical, const size_t margin, const OUTTYPE OUTPUTS)
 {
 	// Sanity checks
 	check_null(self);
@@ -5903,13 +5905,13 @@ PUBLIC void DataCube_create_cubelets(const DataCube *self, const DataCube *mask,
 		String_set(filename, String_get(filename_template));
 		String_append_int(filename, "%ld", src_id);
 		String_append(filename, "_cube.fits");
-		DataCube_save(cubelet, String_get(filename), overwrite, DESTROY);
+		DataCube_save(cubelet, String_get(filename), overwrite, DESTROY,OUTPUTS);
 		
 		// ...masklet
 		String_set(filename, String_get(filename_template));
 		String_append_int(filename, "%ld", src_id);
 		String_append(filename, "_mask.fits");
-		DataCube_save(masklet, String_get(filename), overwrite, DESTROY);
+		DataCube_save(masklet, String_get(filename), overwrite, DESTROY,OUTPUTS);
 		
 		// ...moment maps
 		if(mom0 != NULL)
@@ -5917,7 +5919,7 @@ PUBLIC void DataCube_create_cubelets(const DataCube *self, const DataCube *mask,
 			String_set(filename, String_get(filename_template));
 			String_append_int(filename, "%ld", src_id);
 			String_append(filename, "_mom0.fits");
-			DataCube_save(mom0, String_get(filename), overwrite, DESTROY);
+			DataCube_save(mom0, String_get(filename), overwrite, DESTROY,OUTPUTS);
 		}
 		
 		if(mom1 != NULL)
@@ -5925,7 +5927,7 @@ PUBLIC void DataCube_create_cubelets(const DataCube *self, const DataCube *mask,
 			String_set(filename, String_get(filename_template));
 			String_append_int(filename, "%ld", src_id);
 			String_append(filename, "_mom1.fits");
-			DataCube_save(mom1, String_get(filename), overwrite, DESTROY);
+			DataCube_save(mom1, String_get(filename), overwrite, DESTROY,OUTPUTS);
 		}
 		
 		if(mom2 != NULL)
@@ -5933,7 +5935,7 @@ PUBLIC void DataCube_create_cubelets(const DataCube *self, const DataCube *mask,
 			String_set(filename, String_get(filename_template));
 			String_append_int(filename, "%ld", src_id);
 			String_append(filename, "_mom2.fits");
-			DataCube_save(mom2, String_get(filename), overwrite, DESTROY);
+			DataCube_save(mom2, String_get(filename), overwrite, DESTROY,OUTPUTS);
 		}
 		
 		if(chan != NULL)
@@ -5941,7 +5943,7 @@ PUBLIC void DataCube_create_cubelets(const DataCube *self, const DataCube *mask,
 			String_set(filename, String_get(filename_template));
 			String_append_int(filename, "%ld", src_id);
 			String_append(filename, "_chan.fits");
-			DataCube_save(chan, String_get(filename), overwrite, DESTROY);
+			DataCube_save(chan, String_get(filename), overwrite, DESTROY,OUTPUTS);
 		}
 		
 		// ...spectrum

@@ -59,10 +59,10 @@ typedef enum {NOISE_STAT_STD, NOISE_STAT_MAD, NOISE_STAT_GAUSS} noise_stat;
 //                                                                   //
 //		"MEM" - use a pointer to a flat array of floats and a        //
 //              pointer to a char array of key/value pairs.          //
-//		"OUTOFRANGE" - should never equal this - keep this as the    //
+//		"SOURCETYPERANGE" - should never equal this - keep this as the    //
 //					   last element of the enum.                     //
 // ----------------------------------------------------------------- //
-typedef enum {FITS, MEM, OUTOFRANGE} SOURCETYPE;
+typedef enum {FITS, MEM, SOURCETYPERANGE} SOURCETYPE;
 
 // ----------------------------------------------------------------- //
 // Class 'DataCube'                                                  //
@@ -88,7 +88,7 @@ PUBLIC void       DataCube_load             (DataCube *self, char *dataSrc, cons
 PUBLIC void       DataCube_readFITS         (DataCube *self, const char *filename, const Array_siz *region);
 PUBLIC void       DataCube_readMEM          (DataCube *self, float *dataPtr, int datasize, char *headerPtr, int headersize);
 // Saving to FITS format
-PUBLIC void       DataCube_save             (const DataCube *self, const char *filename, const bool overwrite, const bool preserve);
+PUBLIC void       DataCube_save             (const DataCube *self, const char *filename, const bool overwrite, const bool preserve, const OUTTYPE OUTPUTS);
 
 // Getting basic information
 PUBLIC size_t     DataCube_get_size         (const DataCube *self);
@@ -173,7 +173,7 @@ PUBLIC void       DataCube_parameterise     (const DataCube *self, const DataCub
 
 // Create moment maps and cubelets
 PUBLIC void       DataCube_create_moments   (const DataCube *self, const DataCube *mask, DataCube **mom0, DataCube **mom1, DataCube **mom2, DataCube **chan, const char *obj_name, bool use_wcs, const bool positive);
-PUBLIC void       DataCube_create_cubelets  (const DataCube *self, const DataCube *mask, const Catalog *cat, const char *basename, const bool overwrite, bool use_wcs, bool physical, const size_t margin);
+PUBLIC void       DataCube_create_cubelets  (const DataCube *self, const DataCube *mask, const Catalog *cat, const char *basename, const bool overwrite, bool use_wcs, bool physical, const size_t margin,const OUTTYPE OUTPUTS);
 
 // WCS
 PUBLIC WCS       *DataCube_extract_wcs      (const DataCube *self);

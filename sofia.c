@@ -72,6 +72,7 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 {
 
 	SOURCETYPE DATATYPE = MEM;
+	OUTTYPE OUTPUTS = FILES;
 	// If dataPtr is NULL, we've been called in standalone mode, so data will come from FITS file
 	if (dataPtr == NULL) {
 		DATATYPE = FITS;
@@ -209,6 +210,9 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 		if (strcmp(Parameter_get_str(par,"input.source"), "FITS") == 0) DATATYPE = FITS;
 		else if (strcmp(Parameter_get_str(par,"input.source"), "MEM") == 0) DATATYPE = MEM;
 	}
+	// Check to see if any outputs have been defined
+	if (strcmp(Parameter_get_str(par,"output.type"), "FILES") == 0) OUTPUTS = FILES;
+		else if (strcmp(Parameter_get_str(par,"output.type"), "NONE") == 0) OUTPUTS = NONE;
 
 	unsigned int autoflag_mode = 0;
 	if     (strcmp(Parameter_get_str(par, "flag.auto"), "channels") == 0) autoflag_mode = 1;
@@ -256,10 +260,8 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 	// ---------------------------- //
 	// Define file names and paths  //
 	// ---------------------------- //
-	
-	const char *base_dir  = Parameter_get_str(par, "output.directory");
-	const char *base_name = Parameter_get_str(par, "output.filename");
-	
+	const char *base_dir = (OUTPUTS == FILES) ? Parameter_get_str(par, "output.directory") : "NONE";
+	const char *base_name = (OUTPUTS == FILES) ? Parameter_get_str(par, "output.filename") : "default";
 	// Set up input paths
 	Path *path_data_in = Path_new();
 	Path_set(path_data_in, Parameter_get_str(par, "input.data"));
@@ -362,7 +364,7 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 	}
 	
 	// Check overwrite conditions
-	if(!overwrite)
+	if(!overwrite && OUTPUTS == FILES)
 	{
 		if(write_cubelets) {
 			ensure(errno != EEXIST, ERR_FILE_ACCESS,
@@ -585,7 +587,7 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 			{
 				// Apply flags to noise cube
 				if(use_flagging) DataCube_flag_regions(noiseCube, flag_regions);
-				DataCube_save(noiseCube, Path_get(path_noise_out), overwrite, DESTROY);
+				DataCube_save(noiseCube, Path_get(path_noise_out), overwrite, DESTROY,OUTPUTS);
 			}
 			DataCube_delete(noiseCube);
 		}
@@ -723,7 +725,7 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 	if(write_filtered && (use_region || use_flagging || use_flagging_cat || use_cont_sub || use_noise || use_weights || use_noise_scaling || use_spat_filter))  // ALERT: Add conditions here as needed.
 	{
 		status("Writing filtered cube");
-		DataCube_save(dataCube, Path_get(path_filtered), overwrite, PRESERVE);
+		DataCube_save(dataCube, Path_get(path_filtered), overwrite, PRESERVE,OUTPUTS);
 		
 		// Print time
 		timestamp(start_time, start_clock);
@@ -924,7 +926,7 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 	if(write_rawmask)
 	{
 		status("Writing raw binary mask");
-		DataCube_save(maskCubeTmp, Path_get(path_mask_raw), overwrite, DESTROY);
+		DataCube_save(maskCubeTmp, Path_get(path_mask_raw), overwrite, DESTROY,OUTPUTS);
 		
 		// Print time
 		timestamp(start_time, start_clock);
@@ -1027,7 +1029,7 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 		Matrix *covar = LinkerPar_reliability(lpar, Parameter_get_flt(par, "reliability.scaleKernel"), rel_fmin, rel_cat);
 		
 		// Create plots if requested
-		if(use_rel_plot) LinkerPar_rel_plots(lpar, rel_threshold, rel_fmin, covar, Path_get(path_rel_plot), overwrite);
+		if(use_rel_plot && OUTPUTS==FILES) LinkerPar_rel_plots(lpar, rel_threshold, rel_fmin, covar, Path_get(path_rel_plot), overwrite);
 		
 		// Delete covariance matrix and catalogue table again
 		Matrix_delete(covar);
@@ -1168,7 +1170,7 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 	if(write_cubelets)
 	{
 		status("Creating cubelets");
-		DataCube_create_cubelets(dataCube, maskCube, catalog, Path_get(path_cubelets), overwrite, use_wcs, use_physical, Parameter_get_int(par, "output.marginCubelets"));
+		DataCube_create_cubelets(dataCube, maskCube, catalog, Path_get(path_cubelets), overwrite, use_wcs, use_physical, Parameter_get_int(par, "output.marginCubelets"),OUTPUTS);
 		
 		// Print time
 		timestamp(start_time, start_clock);
@@ -1192,10 +1194,10 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 		DataCube_create_moments(dataCube, maskCube, &mom0, &mom1, &mom2, &chan, NULL, use_wcs, true);
 		
 		// Save moment maps to disk
-		if(mom0 != NULL) DataCube_save(mom0, Path_get(path_mom0), overwrite, DESTROY);
-		if(mom1 != NULL) DataCube_save(mom1, Path_get(path_mom1), overwrite, DESTROY);
-		if(mom2 != NULL) DataCube_save(mom2, Path_get(path_mom2), overwrite, DESTROY);
-		if(chan != NULL) DataCube_save(chan, Path_get(path_chan), overwrite, DESTROY);
+		if(mom0 != NULL) DataCube_save(mom0, Path_get(path_mom0), overwrite, DESTROY,OUTPUTS);
+		if(mom1 != NULL) DataCube_save(mom1, Path_get(path_mom1), overwrite, DESTROY,OUTPUTS);
+		if(mom2 != NULL) DataCube_save(mom2, Path_get(path_mom2), overwrite, DESTROY,OUTPUTS);
+		if(chan != NULL) DataCube_save(chan, Path_get(path_chan), overwrite, DESTROY,OUTPUTS);
 		
 		// Delete moment maps again
 		DataCube_delete(mom0);
@@ -1221,12 +1223,12 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 		if(write_mask2d)
 		{
 			DataCube *maskImage = DataCube_2d_mask(maskCube);
-			DataCube_save(maskImage, Path_get(path_mask_2d), overwrite, DESTROY);
+			DataCube_save(maskImage, Path_get(path_mask_2d), overwrite, DESTROY,OUTPUTS);
 			DataCube_delete(maskImage);
 		}
 		
 		// Write 3-D mask cube
-		if(write_mask) DataCube_save(maskCube, Path_get(path_mask_out), overwrite, DESTROY);
+		if(write_mask) DataCube_save(maskCube, Path_get(path_mask_out), overwrite, DESTROY,OUTPUTS);
 		
 		// Print time
 		timestamp(start_time, start_clock);
@@ -1256,19 +1258,19 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 		if(write_ascii)
 		{
 			message("Writing ASCII file:   %s", Path_get_file(path_cat_ascii));
-			Catalog_save(catalog, Path_get(path_cat_ascii), CATALOG_FORMAT_ASCII, overwrite);
+			Catalog_save(catalog, Path_get(path_cat_ascii), CATALOG_FORMAT_ASCII, overwrite,OUTPUTS);
 		}
 		
 		if(write_xml)
 		{
 			message("Writing VOTable file: %s", Path_get_file(path_cat_xml));
-			Catalog_save(catalog, Path_get(path_cat_xml), CATALOG_FORMAT_XML, overwrite);
+			Catalog_save(catalog, Path_get(path_cat_xml), CATALOG_FORMAT_XML, overwrite,OUTPUTS);
 		}
 		
 		if(write_sql)
 		{
 			message("Writing SQL file:     %s", Path_get_file(path_cat_sql));
-			Catalog_save(catalog, Path_get(path_cat_sql), CATALOG_FORMAT_SQL, overwrite);
+			Catalog_save(catalog, Path_get(path_cat_sql), CATALOG_FORMAT_SQL, overwrite,OUTPUTS);
 		}
 		
 		// Print time
@@ -1282,6 +1284,7 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 	// ---------------------------- //
 	
 	// Delete data cube and mask cube
+	status("Cleaning up");
 	DataCube_delete(maskCube);
 	DataCube_delete(dataCube);
 	

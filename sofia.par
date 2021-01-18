@@ -122,6 +122,7 @@ parameter.offset           =  false
 
 # Output
 
+output.type                =  NONE
 output.directory           =  /home/ger063/src/sofia/SoFiA-2/output 
 output.filename            =  sofia_test_output
 output.writeCatASCII       =  true

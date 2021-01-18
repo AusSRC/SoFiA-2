@@ -616,6 +616,7 @@ PUBLIC void Parameter_default(Parameter *self)
 	Parameter_set(self, "parameter.offset"         , "false");
 	
 	// Output
+	Parameter_set(self, "output.type"              , "FILES");
 	Parameter_set(self, "output.directory"         , "");
 	Parameter_set(self, "output.filename"          , "");
 	Parameter_set(self, "output.writeCatASCII"     , "true");
