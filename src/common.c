@@ -88,9 +88,17 @@ void ensure(const bool condition, const int errorCode, const char *format, ...)
 		va_start(args, format);
 		fprintf(stderr, "\n\33[31mERROR: ");
 		vfprintf(stderr, format, args);
-		fprintf(stderr, "\n       %s: Terminating with error code %d.\33[0m\n\n", ERRSTR[errorCode],errorCode);
-		va_end(args);
-		exit(errorCode);
+		if (errorCode == 8){
+			fprintf(stderr, "\n       %s: Ending - error code %d.\33[0m\n\n", ERRSTR[errorCode],errorCode);
+			va_end(args);
+			exit(0);
+
+		}
+		else {
+			fprintf(stderr, "\n       %s: Terminating with error code %d.\33[0m\n\n", ERRSTR[errorCode],errorCode);
+			va_end(args);
+			exit(errorCode);
+		}
 	}
 	return;
 }
