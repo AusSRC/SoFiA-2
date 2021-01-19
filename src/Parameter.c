@@ -586,6 +586,7 @@ PUBLIC void Parameter_default(Parameter *self)
 	Parameter_set(self, "threshold.fluxRange"      , "negative");
 	
 	// Linker
+	Parameter_set(self, "linker.enable"            , "true");
 	Parameter_set(self, "linker.radiusXY"          , "1");
 	Parameter_set(self, "linker.radiusZ"           , "1");
 	Parameter_set(self, "linker.minSizeXY"         , "5");
