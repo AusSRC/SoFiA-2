@@ -43,6 +43,8 @@ FITS_HEADER_KEY_SIZE     = 10
 FITS_HEADER_VALUE_SIZE   = 70
 FITS_HEADER_FIXED_WIDTH  = 20
 
+outputs = ["return code","channels","moment0","moment1","moment2","catalog"]
+
 def extractFromFits(fitsfile):
     ''' Return the FITS hdr as a dict and the FITS data
         as a flattened array of floats.
@@ -139,8 +141,18 @@ if __name__ == "__main__":
         sys.exit()
     
     print("\nReturned to Python caller \n")
+    
+    # The returned object from the call to sofia_mainline has the following structure:
+    # ret[0] - the return code (normally 0)
+    #
+    # ret[1] - the 'channels' output array of ints
+    # ret[2] - the 'moment0' output array of floats
+    # ret[3] - the 'moment1' output array of floats
+    # ret[4] - the 'moment2' output array of floats
+    # ret[5] - the 'catalog' output XML string, but as ASCII values (use ret[5].tobytes() to read)
+    #
+    
     print("With code %d\n" % ret[0])
     for i in range(len(ret)):
-        print("\n",ret[i]);
+        print("\n",outputs[i],":\n",ret[i]);
     print("\n",ret[-1].tobytes())
-    print(dataPtr)

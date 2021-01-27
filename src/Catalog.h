@@ -68,6 +68,6 @@ PUBLIC  size_t     Catalog_writeMem      (const Catalog *self, char **memPtr);
 
 // Private methods
 PRIVATE void     Catalog_append_memory (Catalog *self);
-PRIVATE char *   Catalog_addFormatted(char *str1, char *format, ...);
+PRIVATE char *   Catalog_addFormatted(char *format, ...);
 
 #endif

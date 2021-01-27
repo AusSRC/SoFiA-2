@@ -1299,6 +1299,7 @@ int sofia_mainline(float *dataPtr, int datasize, char *headerPtr, int headersize
 				message("Writing VOTable to memory");
 				*catlen = Catalog_writeMem(catalog,&_catlog);
 				*catlog = _catlog;
+				printf("DEBUG - catalog len = %d",*catlen);
 			}
 			else {
 				message("Writing VOTable file: %s", Path_get_file(path_cat_xml));
