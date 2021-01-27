@@ -628,24 +628,22 @@ PUBLIC size_t Catalog_writeMem(const Catalog *self, char **memPtr)
 
 
 // ----------------------------------------------------------------- //
-// concatenate strings, do variable substitution                     //
+// format strings, do variable substitution                          //
 // ----------------------------------------------------------------- //
 // Arguments:                                                        //
 //                                                                   //
-//   (1) self     - Object self-reference.                           //
-//   (2) str 	  - 1st string                                       //
-//   (3) format   - format string                                    //
-//   (4...)       - values to substitute                             //
+//   (1) format   - format string                                    //
+//   (2...)       - values to substitute                             //
 //                                                                   //
 // Return value:                                                     //
 //                                                                   //
-//   concatenated string                                             //
+//    substituted string                                             //
 //                                                                   //
 // Description:                                                      //
 //                                                                   //
 //   Returns a correctly formatted and buffered string               //
-//   (NULL terminated) which is a concatenation of the two input     //
-//   strings, with values substituted into the result string.        //
+//   (NULL terminated) which is based on the given format string     //
+//   with values substituted into the result string.                 //
 // ----------------------------------------------------------------- //
 
 PRIVATE char * Catalog_addFormatted(char *format, ...)
