@@ -68,8 +68,16 @@
 // and write out catalogues and images.                              //
 // ----------------------------------------------------------------- //
 
-void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, char *path_to_par,int parsize)
+int sofia_mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, char *path_to_par,int parsize, int ** channels, int* chanlen, float **moment0, int* mom0len, float **moment1, int* mom1len, float **moment2, int* mom2len, signed char **catlog, int* catlen)
 {
+
+	// When called as a library, data can optionally be passed back to the caller in memory,
+	// rather than writing FITS files. For this we need some temp data pointers:
+	int *_channels = (int *)malloc(sizeof(int));
+	float *_moment0 = (float *)malloc(sizeof(float));
+	float *_moment1 = (float *)malloc(sizeof(float));
+	float *_moment2 = (float *)malloc(sizeof(float));
+	char * _catlog = (char *)malloc(sizeof(char));
 
 	SOURCETYPE DATATYPE = MEM;
 	OUTTYPE OUTPUTS = FILES;
@@ -213,6 +221,7 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 	// Check to see if any outputs have been defined
 	if (strcmp(Parameter_get_str(par,"output.type"), "FILES") == 0) OUTPUTS = FILES;
 		else if (strcmp(Parameter_get_str(par,"output.type"), "NONE") == 0) OUTPUTS = NONE;
+		else if (strcmp(Parameter_get_str(par,"output.type"), "MEM") == 0) OUTPUTS = BUFF;
 
 	unsigned int autoflag_mode = 0;
 	if     (strcmp(Parameter_get_str(par, "flag.auto"), "channels") == 0) autoflag_mode = 1;
@@ -587,7 +596,10 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 			{
 				// Apply flags to noise cube
 				if(use_flagging) DataCube_flag_regions(noiseCube, flag_regions);
-				DataCube_save(noiseCube, Path_get(path_noise_out), overwrite, DESTROY,OUTPUTS);
+				if (OUTPUTS == BUFF)
+					DataCube_writeMemFloat(noiseCube,NULL, "true");
+				else
+					DataCube_save(noiseCube, Path_get(path_noise_out), overwrite, DESTROY,OUTPUTS);
 			}
 			DataCube_delete(noiseCube);
 		}
@@ -725,7 +737,10 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 	if(write_filtered && (use_region || use_flagging || use_flagging_cat || use_cont_sub || use_noise || use_weights || use_noise_scaling || use_spat_filter))  // ALERT: Add conditions here as needed.
 	{
 		status("Writing filtered cube");
-		DataCube_save(dataCube, Path_get(path_filtered), overwrite, PRESERVE,OUTPUTS);
+		if (OUTPUTS == BUFF)
+			DataCube_writeMemFloat(dataCube,NULL, "true");
+		else
+			DataCube_save(dataCube, Path_get(path_filtered), overwrite, PRESERVE,OUTPUTS);
 		
 		// Print time
 		timestamp(start_time, start_clock);
@@ -926,7 +941,10 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 	if(write_rawmask)
 	{
 		status("Writing raw binary mask");
-		DataCube_save(maskCubeTmp, Path_get(path_mask_raw), overwrite, DESTROY,OUTPUTS);
+		if (OUTPUTS == BUFF)
+			DataCube_writeMemFloat(maskCubeTmp,NULL, "true");
+		else
+			DataCube_save(maskCubeTmp, Path_get(path_mask_raw), overwrite, DESTROY,OUTPUTS);
 		
 		// Print time
 		timestamp(start_time, start_clock);
@@ -1194,11 +1212,23 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 		DataCube_create_moments(dataCube, maskCube, &mom0, &mom1, &mom2, &chan, NULL, use_wcs, true);
 		
 		// Save moment maps to disk
-		if(mom0 != NULL) DataCube_save(mom0, Path_get(path_mom0), overwrite, DESTROY,OUTPUTS);
-		if(mom1 != NULL) DataCube_save(mom1, Path_get(path_mom1), overwrite, DESTROY,OUTPUTS);
-		if(mom2 != NULL) DataCube_save(mom2, Path_get(path_mom2), overwrite, DESTROY,OUTPUTS);
-		if(chan != NULL) DataCube_save(chan, Path_get(path_chan), overwrite, DESTROY,OUTPUTS);
-		
+		if (OUTPUTS == BUFF){
+			*mom0len = 1;
+			if(mom0 != NULL) *mom0len = DataCube_writeMemFloat(mom0,&_moment0,"true");
+			*moment0 = _moment0;
+			if(mom1 != NULL) *mom1len = DataCube_writeMemFloat(mom1,&_moment1,"true");
+			*moment1 = _moment1;
+			if(mom2 != NULL) *mom2len = DataCube_writeMemFloat(mom2,&_moment2,"true");
+			*moment2 = _moment2;
+			if(chan != NULL) *chanlen = DataCube_writeMemInt(chan,&_channels,"true");
+			*channels = _channels;
+		}
+		else{
+			if(mom0 != NULL) DataCube_save(mom0, Path_get(path_mom0), overwrite, DESTROY,OUTPUTS);
+			if(mom1 != NULL) DataCube_save(mom1, Path_get(path_mom1), overwrite, DESTROY,OUTPUTS);
+			if(mom2 != NULL) DataCube_save(mom2, Path_get(path_mom2), overwrite, DESTROY,OUTPUTS);
+			if(chan != NULL) DataCube_save(chan, Path_get(path_chan), overwrite, DESTROY,OUTPUTS);
+		}
 		// Delete moment maps again
 		DataCube_delete(mom0);
 		DataCube_delete(mom1);
@@ -1220,7 +1250,7 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 		status("Writing mask cube");
 		
 		// Create and save projected 2-D mask image
-		if(write_mask2d)
+		if(write_mask2d && OUTPUTS == FILES)
 		{
 			DataCube *maskImage = DataCube_2d_mask(maskCube);
 			DataCube_save(maskImage, Path_get(path_mask_2d), overwrite, DESTROY,OUTPUTS);
@@ -1228,8 +1258,10 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 		}
 		
 		// Write 3-D mask cube
-		if(write_mask) DataCube_save(maskCube, Path_get(path_mask_out), overwrite, DESTROY,OUTPUTS);
-		
+		if(write_mask) {
+			if (OUTPUTS != BUFF)
+				DataCube_save(maskCube, Path_get(path_mask_out), overwrite, DESTROY,OUTPUTS);
+		}
 		// Print time
 		timestamp(start_time, start_clock);
 	}
@@ -1255,7 +1287,7 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 			}
 		}
 		
-		if(write_ascii)
+		if(write_ascii && (OUTPUTS == FILES))
 		{
 			message("Writing ASCII file:   %s", Path_get_file(path_cat_ascii));
 			Catalog_save(catalog, Path_get(path_cat_ascii), CATALOG_FORMAT_ASCII, overwrite,OUTPUTS);
@@ -1263,11 +1295,18 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 		
 		if(write_xml)
 		{
-			message("Writing VOTable file: %s", Path_get_file(path_cat_xml));
-			Catalog_save(catalog, Path_get(path_cat_xml), CATALOG_FORMAT_XML, overwrite,OUTPUTS);
+			if (OUTPUTS == BUFF) {
+				message("Writing VOTable to memory");
+				*catlen = Catalog_writeMem(catalog,&_catlog);
+				*catlog = _catlog;
+			}
+			else {
+				message("Writing VOTable file: %s", Path_get_file(path_cat_xml));
+				Catalog_save(catalog, Path_get(path_cat_xml), CATALOG_FORMAT_XML, overwrite,OUTPUTS);
+			}
 		}
 		
-		if(write_sql)
+		if(write_sql&&(OUTPUTS == FILES))
 		{
 			message("Writing SQL file:     %s", Path_get_file(path_cat_sql));
 			Catalog_save(catalog, Path_get(path_cat_sql), CATALOG_FORMAT_SQL, overwrite,OUTPUTS);
@@ -1325,15 +1364,16 @@ void mainline(float *dataPtr, int datasize, char *headerPtr, int headersize, cha
 	
 	// Print status message
 	status("Pipeline finished.");
-	
-//  return ERR_SUCCESS;
+
+    return 0;
 }
 
 
 int main(int argc, char **argv)
 {
 	int n =1;
+	int *dumm = 0;
 	ensure(argc == 2, ERR_USER_INPUT, "Unexpected number of command line arguments.\nUsage: %s <parameter_file>", argv[0]);
-	mainline(NULL,1,NULL,1,argv[1],1);
+	sofia_mainline(NULL,1,NULL,1,argv[1],1,NULL,dumm,NULL,dumm,NULL,dumm,NULL,dumm,NULL,dumm);
 	return 0;
 }

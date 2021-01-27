@@ -998,7 +998,7 @@ PUBLIC void DataCube_readFITS(DataCube *self, const char *filename, const Array_
 PUBLIC void DataCube_save(const DataCube *self, const char *filename, const bool overwrite, const bool preserve,const OUTTYPE OUTPUTS)
 {
 	// Sanity checks
-	if (OUTPUTS == NONE) return;  // No output required
+	if (OUTPUTS != FILES) return;  // No output required
 
 	check_null(self);
 	check_null(filename);
@@ -6155,6 +6155,62 @@ PRIVATE void DataCube_swap_byte_order(const DataCube *self)
 	return;
 }
 
+// ----------------------------------------------------------------- //
+// Write datacube data to memory block                               //
+// ----------------------------------------------------------------- //
+// Arguments:                                                        //
+//                                                                   //
+//	 (1) self      - Obj self reference                              //
+//	 (2) memPtr   - pointer to memory block                          //
+//	 (2) memsize   - size of memory block                            //
+//                                                                   //
+// Return value:                                                     //
+//                                                                   //
+//   None                                                            //
+//                                                                   //
+// Description:                                                      //
+//                                                                   //
+//		An alternative to writing data to FITS files. When compiled  //
+//		in shared memory mode, setting the parameter file entry      //
+//		'output.type = MEM' will force all datacube writes (saves)   //
+//		to output to memory                                          //
+// ----------------------------------------------------------------- //
+
+PUBLIC size_t DataCube_writeMemFloat(const DataCube *self, float **memPtr, char *reallocOK)
+{
+	if (*memPtr == NULL) return 0;
+	size_t len = self->word_size * self->data_size;
+	size_t memsize = sizeof(*memPtr);
+	if (reallocOK == "false")
+		ensure(len < memsize, ERR_MEM_ALLOC, "Datacube too large for memory!");
+	else{
+		if (len > memsize) {
+			*memPtr = (float *)realloc(*memPtr,len);
+			memsize = len;
+		}
+	}
+	memcpy(*memPtr,self->data,len);
+
+	return len;
+}
+
+PUBLIC size_t DataCube_writeMemInt(const DataCube *self, int **memPtr, char *reallocOK)
+{
+	if (*memPtr == NULL) return 0;
+	size_t len = self->word_size * self->data_size;
+	size_t memsize = sizeof(*memPtr);
+	if (reallocOK == "false")
+		ensure((self->word_size*self->data_size) < memsize, ERR_MEM_ALLOC, "Datacube too large for memory!");
+	else{
+		if (len > memsize) {
+			*memPtr = (int *)realloc(*memPtr,len);
+			memsize = len;
+		}
+	}
+	memcpy(*memPtr,self->data,len);
+
+	return len;
+}
 
 // ----------------------------------------------------------------- //
 // Extract header info from in-mem array

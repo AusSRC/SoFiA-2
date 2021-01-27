@@ -107,17 +107,18 @@
 #define ERR_NO_SRC_FOUND 8
 
 // ----------------------------------------------------------------- //
-// OUTTYPE                                                          //
+// OUTTYPE                                                           //
 // ----------------------------------------------------------------- //
 // This enum defines the output type use for results data            //
 // The default is to write a FITS format file to the filesystem.     //
 // Other types are:                                                  //
 //                                                                   //
 //		"NONE" - no output data will be saved (for testing only)     //
-//		"OUTTYPERANGE" - should never equal this - keep this as the    //
+//		"BUFF" - output data will be written to memory buffers       //
+//		"OUTTYPERANGE" - should never equal this - keep this as the  //
 //					   last element of the enum.                     //
 // ----------------------------------------------------------------- //
-typedef enum {FILES, NONE, OUTTYPERANGE} OUTTYPE;
+typedef enum {FILES, NONE, BUFF, OUTTYPERANGE} OUTTYPE;
 
 // Generic compile time check; should result in a compiler error if
 // condition is false due to attempt to create array of negative size.

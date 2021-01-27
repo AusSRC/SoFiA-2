@@ -34,6 +34,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
+#include <stdarg.h>
 
 #include "Catalog.h"
 
@@ -334,7 +335,7 @@ PUBLIC size_t Catalog_get_size(const Catalog *self)
 PUBLIC void Catalog_save(const Catalog *self, const char *filename, const file_format format, const bool overwrite, const OUTTYPE OUTPUTS)
 {
 	// Sanity checks
-	if(OUTPUTS == NONE) return;  // No output required
+	if(OUTPUTS != FILES) return;  // No output required
 
 	check_null(self);
 	check_null(filename);
@@ -526,7 +527,146 @@ PUBLIC void Catalog_save(const Catalog *self, const char *filename, const file_f
 	return;
 }
 
+PUBLIC size_t Catalog_writeMem(const Catalog *self, char **memPtr)
+{
+	/*
+	printf("DEBUG - in Catalog_writeMem\n");
+	if (memPtr == NULL) return;
+	memPtr = malloc(sizeof(float)* (self->word_size*self->data_size));
+	memcpy(memPtr,self->data,self->word_size*self->data_size);
+	*memsize = self->data_size * self->word_size;
+	*/
 
+	// Some initial definitions
+	const char char_comment = '#';
+	const char char_nocomment = ' ';
+
+	// Get current date and time
+	char current_time_string[64];
+	time_t current_time = time(NULL);
+	strftime(current_time_string, 64, "%a, %d %b %Y, %H:%M:%S", localtime(&current_time));
+
+	// Get first source to extract parameter names and units
+	Source *src0 = self->sources[0];
+
+	const char *data_type_names[2] = {"long", "double"};
+	const char *indentation[7] = {"", "\t", "\t\t", "\t\t\t", "\t\t\t\t", "\t\t\t\t\t", "\t\t\t\t\t\t"}; // Better readability
+	//const char *indentation[7] = {"", "", "", "", "", "", ""}; // Smaller file size
+	size_t charlen = 0;
+
+	// Write XML catalogue (VOTable)
+	char *str1 = "";
+	str1 = Catalog_addFormatted(str1,"%s<?xml version=\"1.0\" ?>\n",indentation[0]);
+	str1 = Catalog_addFormatted(str1,"%s<VOTABLE version=\"1.3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\">\n", indentation[0]);
+	str1 = Catalog_addFormatted(str1, "%s<RESOURCE>\n", indentation[1]);
+	str1 = Catalog_addFormatted(str1, "%s<DESCRIPTION>Source catalogue created by the Source Finding Application ", indentation[2]);
+	str1 = Catalog_addFormatted(str1, "(SoFiA %s)</DESCRIPTION>\n", SOFIA_VERSION);
+	str1 = Catalog_addFormatted(str1, "%s<PARAM name=\"Creator\" datatype=\"char\" arraysize=\"*\" ", indentation[2]);
+	str1 = Catalog_addFormatted(str1, "value=\"SoFiA %s\" ucd=\"meta.id;meta.software\"/>\n", SOFIA_VERSION);
+	str1 = Catalog_addFormatted(str1, "%s<PARAM name=\"Time\" datatype=\"char\" arraysize=\"*\" ", indentation[2]);
+	str1 = Catalog_addFormatted(str1, "value=\"%s\" ucd=\"time.creation\"/>\n", current_time_string);
+	str1 = Catalog_addFormatted(str1, "%s<TABLE ID=\"SoFiA_source_catalogue\" name=\"SoFiA source catalogue\">\n", indentation[2]);
+
+	// Column descriptors
+	str1 = Catalog_addFormatted(str1, "%s<FIELD arraysize=\"32\" datatype=\"char\" name=\"name\" unit=\"\" ucd=\"meta.id\"/>\n", indentation[3]);
+
+	for(size_t j = 0; j < Source_get_num_par(src0); ++j)
+	{
+		str1 = Catalog_addFormatted(str1, "%s<FIELD ",indentation[3]);
+		str1 = Catalog_addFormatted(str1, "datatype=\"%s\" " ,data_type_names[Source_get_type(src0, j)]);
+		str1 = Catalog_addFormatted(str1, "name=\"%s\" ",Source_get_name(src0, j));
+		str1 = Catalog_addFormatted(str1, "unit=\"%s\" ", Source_get_unit(src0, j));
+		str1 = Catalog_addFormatted(str1, "ucd=\"%s\"/>\n", Source_get_ucd(src0, j));
+	}
+
+	// Start of data table
+	str1 = Catalog_addFormatted(str1, "%s<DATA>\n", indentation[3]);
+	str1 = Catalog_addFormatted(str1, "%s<TABLEDATA>\n", indentation[4]);
+
+	// Data rows
+	for(size_t i = 0; i < self->size; ++i)
+	{
+		Source *src = self->sources[i];
+		str1 = Catalog_addFormatted(str1, "%s<TR>\n", indentation[5]);
+
+		str1 = Catalog_addFormatted(str1, "%s<TD>", indentation[6]);
+		str1 = Catalog_addFormatted(str1, "%s</TD>\n", Source_get_identifier(src));
+
+		for(size_t j = 0; j < Source_get_num_par(src); ++j)
+		{
+			if(Source_get_type(src, j) == SOURCE_TYPE_INT)
+			{
+				// Integer value
+				const long int value = Source_get_par_int(src, j);
+				str1 = Catalog_addFormatted(str1, "%s", indentation[6]);
+				char *str2;
+				asprintf(&str2,"<TD>%ld</TD>\n", value);
+				str1 = Catalog_addFormatted(str1,str2,"");
+			}
+			else
+			{
+				// Floating-point value
+				const double value = Source_get_par_flt(src, j);
+				str1 = Catalog_addFormatted(str1, "%s", indentation[6]);
+				char *str2;
+				asprintf(&str2,"<TD>%.15e</TD>\n", value);
+				str1 = Catalog_addFormatted(str1, str2,"");
+			}
+		}
+
+		str1 = Catalog_addFormatted(str1, "%s</TR>\n", indentation[5]);
+	}
+
+	// End of data table
+	str1 = Catalog_addFormatted(str1, "%s</TABLEDATA>\n", indentation[4]);
+	str1 = Catalog_addFormatted(str1, "%s</DATA>\n", indentation[3]);
+
+	// Finalise XML file
+	str1 = Catalog_addFormatted(str1, "%s</TABLE>\n", indentation[2]);
+	str1 = Catalog_addFormatted(str1, "%s</RESOURCE>\n", indentation[1]);
+	str1 = Catalog_addFormatted(str1, "%s</VOTABLE>\n", indentation[0]);
+
+
+
+    int len = sizeof(str1);
+	*memPtr = malloc(sizeof(char)* len);
+	memcpy(*memPtr,str1,len*sizeof(char));
+	size_t memsize = len*sizeof(char);
+	return memsize;
+}
+
+
+// ----------------------------------------------------------------- //
+// concatenate strings, do variable substitution                     //
+// ----------------------------------------------------------------- //
+// Arguments:                                                        //
+//                                                                   //
+//   (1) self     - Object self-reference.                           //
+//   (2) str 	  - 1st string                                       //
+//   (3) format   - format string                                    //
+//   (4...)       - values to substitute                             //
+//                                                                   //
+// Return value:                                                     //
+//                                                                   //
+//   concatenated string                                             //
+//                                                                   //
+// Description:                                                      //
+//                                                                   //
+//   Returns a correctly formatted and buffered string               //
+//   (NULL terminated) which is a concatenation of the two input     //
+//   strings, with values substituted into the result string.        //
+// ----------------------------------------------------------------- //
+
+PRIVATE char * Catalog_addFormatted(char *str,char *format, ...)
+{
+	va_list aptr;
+	int ret;
+	va_start(aptr,format);
+	ret = vasprintf(&str,format,aptr);
+	va_end(aptr);
+
+	return str;
+}
 
 // ----------------------------------------------------------------- //
 // Reallocate memory for one additional source                       //

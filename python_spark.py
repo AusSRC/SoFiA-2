@@ -28,6 +28,7 @@ import threading
 import sofia
 
 import signal
+from builtins import TypeError
 PID = os.getpid()
 
 
@@ -95,20 +96,51 @@ def usage():
 
 if __name__ == "__main__":
    
-    if len(sys.argv)<3:
-        usage()
-        sys.exit(0)
+#   if len(sys.argv)<3:
+#       usage()
+#       sys.exit(0)
          
     # Load some test data into memory
-    fitsfile = sys.argv[1]
+#   fitsfile = sys.argv[1]
+    fitsfile = "sofia_test_datacube.fits"
     hdr,dataPtr = extractFromFits(fitsfile)
     # Format the header info appropriately
     hdrstr,hdrsize = dict2FITSstr(hdr)
     
-    path_to_par = sys.argv[2]
+#   path_to_par = sys.argv[2]
+    path_to_par = "sofia.par"
     parsize = len(path_to_par)
     # pass off to sofia C library
-    sofia.sofia_mainline(dataPtr,hdrstr,hdrsize,path_to_par,parsize)
+    try:
+        ret = sofia.sofia_mainline(dataPtr,hdrstr,hdrsize,path_to_par,parsize)
+    except RuntimeError:
+        print("Caught general exception\n")
+        sys.exit()
+    except StopIteration:
+        print("Caught Null pointer\n")
+        sys.exit()
+    except MemoryError:
+        print("Caught ALLOC error\n")
+        sys.exit()
+    except IndexError:
+        print("Caught index range error\n")
+        sys.exit()
+    except IOError:
+        print("Caught file error\n")
+        sys.exit()
+    except OverflowError:
+        print("Caught integer overflow error\n")
+        sys.exit()
+    except TypeError:
+        print("Caught user input error\n")
+        sys.exit()
+    except SystemExit:
+        print("Caught no sources error\n")
+        sys.exit()
     
-    print("\nReturned to Python caller\n")
-    
+    print("\nReturned to Python caller \n")
+    print("With code %d\n" % ret[0])
+    for i in range(len(ret)):
+        print("\n",ret[i]);
+    print("\n",ret[-1].tobytes())
+    print(dataPtr)

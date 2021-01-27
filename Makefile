@@ -21,10 +21,16 @@ TARGET        = _sofia.so # Use this kind of target for dynamic loading
 exec_prefix   = /usr/bin
 
 CC            = gcc
-CFLAGS        = -fPIC --std=c99 -Wno-incompatible-pointer-types -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -fopenmp
+CFLAGS        = -fPIC --std=c99 -Wno-incompatible-pointer-types -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors
+OPTFLAGS      = -O2 -fopenmp
 INCLUDES      = -I/usr/include/python3.8 -I ~/.local/lib/python3.8/site-packages/numpy/core/include
-LDFLAGS       = --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -O3 -shared -fopenmp
+LDFLAGS       = --std=c99 --pedantic -Wall -Wextra -Wshadow -Wno-unknown-pragmas -Wno-unused-function -Wfatal-errors -shared
 LIBS          = -lm -lwcs
+
+# For debug builds
+
+debug: OPTFLAGS = -O0 -g3 -ggdb
+debug: all
 
 # SWIG Options
 #     SWIG      = location of the SWIG executable
@@ -53,7 +59,7 @@ BUILD_LIBS    = $(LIBS) # Dynamic loading
 .SUFFIXES: .c
 
 .c.o:
-	cd $(SRCDIR) && $(CC) $(CFLAGS) $(INCLUDES) -c $(<F)
+	cd $(SRCDIR) && $(CC) $(CFLAGS) $(OPTFLAGS) $(INCLUDES) -c $(<F)
 
 # ----------------------------------------------------------------------
 # Rules for building the extension
@@ -67,14 +73,14 @@ $(WRAPFILE) : $(INTERFACE)
 	$(SWIG) $(SWIGOPT) $(INTERFACE)
 
 $(WRAPOBJ) : $(WRAPFILE)
-	$(SWIGCC) -c $(CCSHARED) $(CFLAGS) $(WRAPFILE) $(INCLUDES)
+	$(SWIGCC) -c $(CCSHARED) $(CFLAGS) $(OPTFLAGS) $(WRAPFILE) $(INCLUDES)
 
 $(SOFIAOBJ) : $(SOFIASRC)
-	$(SWIGCC) -c $(CCSHARED) $(CFLAGS) $(SOFIASRC) $(INCLUDES)
+	$(SWIGCC) -c $(CCSHARED) $(CFLAGS) $(OPTFLAGS) $(SOFIASRC) $(INCLUDES)
     
 
 $(TARGET): $(WRAPOBJ) $(ALLOBJS)
-	$(BUILD) $(WRAPOBJ) $(ALLOBJS) $(LDFLAGS) $(BUILD_LIBS) -o $(TARGET)
+	$(BUILD) $(WRAPOBJ) $(ALLOBJS) $(LDFLAGS) $(OPTFLAGS) $(BUILD_LIBS) -o $(TARGET)
 
 clean:
 	rm -f $(COBJS) $(CXXOBJS) $(WRAPOBJ) $(WRAPFILE) $(SOFIAOBJ) $(PYINTERFACE) $(TARGET)
