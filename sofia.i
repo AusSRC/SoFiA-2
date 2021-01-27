@@ -8,7 +8,7 @@
   static __thread int infunc = 0;
   static __thread jmp_buf buf;
 
-  static void exithack(int code, void *data) {
+  static void exitFromC(int code, void *data) {
     if (!infunc) return;
     (void)data;
     longjmp(buf,code);
@@ -17,7 +17,7 @@
 %include "numpy.i"
 %init %{
   import_array();
-  on_exit(exithack, NULL);
+  on_exit(exitFromC, NULL);
 
 %}
 %apply (float* INPLACE_ARRAY_FLAT, int DIM_FLAT) {(float* dataPtr, int datasize)}
@@ -35,7 +35,6 @@
   }
   else {
     // Raise exception, code=err
-    //PyErr_Format(PyExc_Exception, "%d", err);
     if (err == 2) PyErr_SetString(PyExc_StopIteration,"Null Pointer error");
     else if (err == 3) PyErr_SetString(PyExc_MemoryError,"Memory allocation error");
     else if (err == 4) PyErr_SetString(PyExc_IndexError,"Range error");
@@ -45,7 +44,7 @@
     else if (err == 8) PyErr_SetString(PyExc_SystemExit,"No sources found!");
     else PyErr_SetString(PyExc_RuntimeError,"General Error");
     infunc = 0;
-    on_exit(exithack, NULL);
+    on_exit(exitFromC, NULL);
     SWIG_fail;
   }
   infunc = 0;
