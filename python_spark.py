@@ -151,6 +151,7 @@ if __name__ == "__main__":
     # ret[4] - the 'moment2' output array of floats
     # ret[5] - the 'catalog' output XML string, but as ASCII values (use ret[5].tobytes() to read)
     #
+    # Note - these are only filled if 'output.type = MEM' in the parameters file.
     
     print("With code %d\n" % ret[0])
     for i in range(len(ret)):
