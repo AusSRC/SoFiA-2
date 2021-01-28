@@ -161,7 +161,8 @@ if __name__ == "__main__":
     
     print("With code %d\n" % ret[0])
 
-    # Check outputs    
+    # Check array outputs    
     np.set_printoptions(threshold=np.inf)
     print(ret[1],len(ret[1]))
+    # Check xml catalog outputs
     print(ret[5].tobytes(),len(ret[5]))

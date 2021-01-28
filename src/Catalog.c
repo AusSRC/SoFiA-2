@@ -544,7 +544,7 @@ PUBLIC size_t Catalog_writeMem(const Catalog *self, char **memPtr)
 
 	const char *data_type_names[2] = {"long", "double"};
 	//const char *indentation[7] = {"", "\t", "\t\t", "\t\t\t", "\t\t\t\t", "\t\t\t\t\t", "\t\t\t\t\t\t"}; // Better readability
-	const char *indentation[7] = {"", "", "", "", "", "", ""}; // Better readability
+	const char *indentation[7] = {"", "", "", "", "", "", ""}; // smaller size
 	size_t charlen = 0;
 
 	// Write XML catalogue (VOTable)
@@ -644,6 +644,15 @@ PUBLIC size_t Catalog_writeMem(const Catalog *self, char **memPtr)
 //   Returns a correctly formatted and buffered string               //
 //   (NULL terminated) which is based on the given format string     //
 //   with values substituted into the result string.                 //
+//	 																 //
+//	 The pattern:													 //
+//																	 //
+//	   str1 = Catalog_addFormatted("%s<some string with %d>",str1,5) //
+//																	 //
+//	 will concatenate str1 and <some string>, with the %d variable   //
+//   correctly substituted with '5' and the correct buffer size      //
+//   automatically allocated.                                        //
+//	 The return string is terminated with '\0'                       //
 // ----------------------------------------------------------------- //
 
 PRIVATE char * Catalog_addFormatted(char *format, ...)
