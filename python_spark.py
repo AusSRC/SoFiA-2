@@ -26,6 +26,7 @@ import logging
 import time
 import threading
 import sofia
+import numpy as np
 
 import signal
 from builtins import TypeError
@@ -159,6 +160,8 @@ if __name__ == "__main__":
     # Note - these are only filled if 'output.type = MEM' in the parameters file.
     
     print("With code %d\n" % ret[0])
-    for i in range(len(ret)):
-        print("\n",outputs[i],":\n",ret[i]);
-    print("\n",ret[-1].tobytes())
+
+    # Check outputs    
+    np.set_printoptions(threshold=np.inf)
+    print(ret[1],len(ret[1]))
+    print(ret[5].tobytes(),len(ret[5]))

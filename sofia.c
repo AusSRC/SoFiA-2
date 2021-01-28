@@ -1365,7 +1365,6 @@ int sofia_mainline(float *dataPtr, int datasize, char *headerPtr, int headersize
 	
 	// Print status message
 	status("Pipeline finished.");
-
     return 0;
 }
 

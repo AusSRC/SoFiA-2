@@ -6191,7 +6191,7 @@ PUBLIC size_t DataCube_writeMemFloat(const DataCube *self, float **memPtr, char 
 	}
 	memcpy(*memPtr,self->data,len);
 
-	return len;
+	return self->data_size;
 }
 
 PUBLIC size_t DataCube_writeMemInt(const DataCube *self, int **memPtr, char *reallocOK)
@@ -6208,8 +6208,7 @@ PUBLIC size_t DataCube_writeMemInt(const DataCube *self, int **memPtr, char *rea
 		}
 	}
 	memcpy(*memPtr,self->data,len);
-
-	return len;
+	return self->data_size;
 }
 
 // ----------------------------------------------------------------- //
