@@ -98,21 +98,26 @@ def usage():
 
 if __name__ == "__main__":
    
-#   if len(sys.argv)<3:
-#       usage()
-#       sys.exit(0)
+    if len(sys.argv)<3:
+        usage()
+        sys.exit(0)
          
     # Load some test data into memory
-#   fitsfile = sys.argv[1]
-    fitsfile = "sofia_test_datacube.fits"
+    fitsfile = sys.argv[1]
+#   fitsfile = "sofia_test_datacube.fits"
     hdr,dataPtr = extractFromFits(fitsfile)
-    # Format the header info appropriately
+    # 'hdr' is now a dict of keyname/value, 'dataPtr' is a numpy flattened array of float32's
+    
+    # Now format the header info appropriately for SoFiA
     hdrstr,hdrsize = dict2FITSstr(hdr)
     
-#   path_to_par = sys.argv[2]
-    path_to_par = "sofia.par"
+    # Get the path to the parameters file
+    path_to_par = sys.argv[2]
+#   path_to_par = "sofia.par"
     parsize = len(path_to_par)
-    # pass off to sofia C library
+    
+    # pass off to sofia C library - note the parameters file must be accessible to 
+    # SoFiA on the given path.
     try:
         ret = sofia.sofia_mainline(dataPtr,hdrstr,hdrsize,path_to_par,parsize)
     except RuntimeError:
