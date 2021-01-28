@@ -1,9 +1,13 @@
-0   ERR_SUCCESS
-1   ERR_FAILURE         PyExc_RuntimeError
-2   ERR_NULL_PTR        PyExc_StopIteration
-3   ERR_MEM_ALLOC       PyExc_MemoryError
-4   ERR_INDEX_RANGE     PyExc_IndexError
-5   ERR_FILE_ACCESS     PyExc_IOError
-6   ERR_INT_OVERFLOW    PyExc_OverflowError
-7   ERR_USER_INPUT      PyExc_TypeError
-8   ERR_NO_SRC_FOUND    PyExc_SystemExit
+SoFiA error codes are mapped to specific Python exceptions so that 
+they can be handled by the calling python wrapper
+
+SoFiA code    Meaning             Python Exception
+0              ERR_SUCCESS
+1              ERR_FAILURE         PyExc_RuntimeError
+2              ERR_NULL_PTR        PyExc_StopIteration
+3              ERR_MEM_ALLOC       PyExc_MemoryError
+4              ERR_INDEX_RANGE     PyExc_IndexError
+5              ERR_FILE_ACCESS     PyExc_IOError
+6              ERR_INT_OVERFLOW    PyExc_OverflowError
+7              ERR_USER_INPUT      PyExc_TypeError
+8              ERR_NO_SRC_FOUND    PyExc_SystemExit
