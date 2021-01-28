@@ -543,25 +543,25 @@ PUBLIC size_t Catalog_writeMem(const Catalog *self, char **memPtr)
 	Source *src0 = self->sources[0];
 
 	const char *data_type_names[2] = {"long", "double"};
-	const char *indentation[7] = {"", "\t", "\t\t", "\t\t\t", "\t\t\t\t", "\t\t\t\t\t", "\t\t\t\t\t\t"}; // Better readability
-	//const char *indentation[7] = {"", "", "", "", "", "", ""}; // Smaller file size
+	//const char *indentation[7] = {"", "\t", "\t\t", "\t\t\t", "\t\t\t\t", "\t\t\t\t\t", "\t\t\t\t\t\t"}; // Better readability
+	const char *indentation[7] = {"", "", "", "", "", "", ""}; // Better readability
 	size_t charlen = 0;
 
 	// Write XML catalogue (VOTable)
 	char *str1 = "";
-	str1 = Catalog_addFormatted("%s%s<?xml version=\"1.0\" ?>\n",str1,indentation[0]);
-	str1 = Catalog_addFormatted("%s%s<VOTABLE version=\"1.3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\">\n", str1,indentation[0]);
-	str1 = Catalog_addFormatted("%s%s<RESOURCE>\n", str1,indentation[1]);
+	str1 = Catalog_addFormatted("%s%s<?xml version=\"1.0\" ?>",str1,indentation[0]);
+	str1 = Catalog_addFormatted("%s%s<VOTABLE version=\"1.3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.ivoa.net/xml/VOTable/v1.3\">", str1,indentation[0]);
+	str1 = Catalog_addFormatted("%s%s<RESOURCE>", str1,indentation[1]);
 	str1 = Catalog_addFormatted("%s%s<DESCRIPTION>Source catalogue created by the Source Finding Application ", str1,indentation[2]);
-	str1 = Catalog_addFormatted("%s(SoFiA %s)</DESCRIPTION>\n", str1,SOFIA_VERSION);
+	str1 = Catalog_addFormatted("%s(SoFiA %s)</DESCRIPTION>", str1,SOFIA_VERSION);
 	str1 = Catalog_addFormatted("%s%s<PARAM name=\"Creator\" datatype=\"char\" arraysize=\"*\" ", str1,indentation[2]);
-	str1 = Catalog_addFormatted("%svalue=\"SoFiA %s\" ucd=\"meta.id;meta.software\"/>\n", str1,SOFIA_VERSION);
+	str1 = Catalog_addFormatted("%svalue=\"SoFiA %s\" ucd=\"meta.id;meta.software\"/>", str1,SOFIA_VERSION);
 	str1 = Catalog_addFormatted("%s%s<PARAM name=\"Time\" datatype=\"char\" arraysize=\"*\" ", str1,indentation[2]);
-	str1 = Catalog_addFormatted("%svalue=\"%s\" ucd=\"time.creation\"/>\n", str1,current_time_string);
-	str1 = Catalog_addFormatted("%s%s<TABLE ID=\"SoFiA_source_catalogue\" name=\"SoFiA source catalogue\">\n", str1,indentation[2]);
+	str1 = Catalog_addFormatted("%svalue=\"%s\" ucd=\"time.creation\"/>", str1,current_time_string);
+	str1 = Catalog_addFormatted("%s%s<TABLE ID=\"SoFiA_source_catalogue\" name=\"SoFiA source catalogue\">", str1,indentation[2]);
 
 	// Column descriptors
-	str1 = Catalog_addFormatted("%s%s<FIELD arraysize=\"32\" datatype=\"char\" name=\"name\" unit=\"\" ucd=\"meta.id\"/>\n", str1,indentation[3]);
+	str1 = Catalog_addFormatted("%s%s<FIELD arraysize=\"32\" datatype=\"char\" name=\"name\" unit=\"\" ucd=\"meta.id\"/>", str1,indentation[3]);
 
 	for(size_t j = 0; j < Source_get_num_par(src0); ++j)
 	{
@@ -569,21 +569,21 @@ PUBLIC size_t Catalog_writeMem(const Catalog *self, char **memPtr)
 		str1 = Catalog_addFormatted("%sdatatype=\"%s\" " ,str1,data_type_names[Source_get_type(src0, j)]);
 		str1 = Catalog_addFormatted("%sname=\"%s\" ",str1,Source_get_name(src0, j));
 		str1 = Catalog_addFormatted("%sunit=\"%s\" ", str1,Source_get_unit(src0, j));
-		str1 = Catalog_addFormatted("%sucd=\"%s\"/>\n", str1,Source_get_ucd(src0, j));
+		str1 = Catalog_addFormatted("%sucd=\"%s\"/>", str1,Source_get_ucd(src0, j));
 	}
 
 	// Start of data table
-	str1 = Catalog_addFormatted("%s%s<DATA>\n", str1,indentation[3]);
-	str1 = Catalog_addFormatted("%s%s<TABLEDATA>\n", str1,indentation[4]);
+	str1 = Catalog_addFormatted("%s%s<DATA>", str1,indentation[3]);
+	str1 = Catalog_addFormatted("%s%s<TABLEDATA>", str1,indentation[4]);
 
 	// Data rows
 	for(size_t i = 0; i < self->size; ++i)
 	{
 		Source *src = self->sources[i];
-		str1 = Catalog_addFormatted("%s%s<TR>\n", str1,indentation[5]);
+		str1 = Catalog_addFormatted("%s%s<TR>", str1,indentation[5]);
 
 		str1 = Catalog_addFormatted("%s%s<TD>", str1,indentation[6]);
-		str1 = Catalog_addFormatted("%s%s</TD>\n", str1,Source_get_identifier(src));
+		str1 = Catalog_addFormatted("%s%s</TD>", str1,Source_get_identifier(src));
 
 		for(size_t j = 0; j < Source_get_num_par(src); ++j)
 		{
@@ -593,7 +593,7 @@ PUBLIC size_t Catalog_writeMem(const Catalog *self, char **memPtr)
 				const long int value = Source_get_par_int(src, j);
 				str1 = Catalog_addFormatted("%s%s", str1,indentation[6]);
 				char *str2;
-				asprintf(&str2,"<TD>%ld</TD>\n", value);
+				asprintf(&str2,"<TD>%ld</TD>", value);
 				str1 = Catalog_addFormatted("%s%s", str1,str2);
 			}
 			else
@@ -602,22 +602,22 @@ PUBLIC size_t Catalog_writeMem(const Catalog *self, char **memPtr)
 				const double value = Source_get_par_flt(src, j);
 				str1 = Catalog_addFormatted("%s%s", str1,indentation[6]);
 				char *str2;
-				asprintf(&str2,"<TD>%.15e</TD>\n", value);
+				asprintf(&str2,"<TD>%.15e</TD>", value);
 				str1 = Catalog_addFormatted("%s%s", str1,str2);
 			}
 		}
 
-		str1 = Catalog_addFormatted("%s%s</TR>\n", str1,indentation[5]);
+		str1 = Catalog_addFormatted("%s%s</TR>", str1,indentation[5]);
 	}
 
 	// End of data table
-	str1 = Catalog_addFormatted("%s%s</TABLEDATA>\n", str1,indentation[4]);
-	str1 = Catalog_addFormatted("%s%s</DATA>\n", str1,indentation[3]);
+	str1 = Catalog_addFormatted("%s%s</TABLEDATA>", str1,indentation[4]);
+	str1 = Catalog_addFormatted("%s%s</DATA>", str1,indentation[3]);
 
 	// Finalise XML file
-	str1 = Catalog_addFormatted("%s%s</TABLE>\n", str1,indentation[2]);
-	str1 = Catalog_addFormatted("%s%s</RESOURCE>\n", str1,indentation[1]);
-	str1 = Catalog_addFormatted("%s%s</VOTABLE>\n", str1,indentation[0]);
+	str1 = Catalog_addFormatted("%s%s</TABLE>", str1,indentation[2]);
+	str1 = Catalog_addFormatted("%s%s</RESOURCE>", str1,indentation[1]);
+	str1 = Catalog_addFormatted("%s%s</VOTABLE>", str1,indentation[0]);
 
     size_t len = strlen(str1);
 	*memPtr = malloc(sizeof(char)* len);
