@@ -127,7 +127,7 @@ def decompressCsr(csr_array):
     start_indx = int((len(csr_array)-1)/2)
     end_indx = int(len(csr_array))-2
     data = csr_array[0:start_indx-1]
-    indices = int(csr_array[start_indx:end_indx])
+    indices = csr_array[start_indx:end_indx]
     
     for indx,i in np.ndenumerate(indices):
         original[int(i)] = data[int(indx[0])]
@@ -223,6 +223,9 @@ if __name__ == "__main__":
     print("\nNon-zero entries in %s = " % name,datalen)
     print("\nindices in %s CSR array= " % name,indxlen)
     print("Original uncompressed length was: ",original_len)
+    
+    # This will print out the original uncompressed array
+    #print(decompressCsr(ret[out]))
     
     # Check xml catalog outputs
     print("\n",ret[5].tobytes(),len(ret[5]))
