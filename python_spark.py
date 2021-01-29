@@ -210,17 +210,19 @@ if __name__ == "__main__":
     
     print("With code %d\n" % ret[0])
 
-    # Check array outputs - this example looks at the moment0 array   
+    # Check array outputs - this example looks at the channel array   
+    out = 1;
+    name = "channel"
     np.set_printoptions(threshold=np.inf)
     # the original uncompressed size is the last value of the array
-    original_len = int(ret[2][-1])
+    original_len = int(ret[out][-1])
     # The actual (non-zero) data is in the 1st half of the array
-    datalen = indxlen = int((len(ret[2])-1)/2)
-    print(ret[2][0:datalen])
-    print("Total length of moment0 CSR array: ",len(ret[2]))
-    print("\nNon-zero entries in moment0 = ",datalen)
-    print("\nindices in moment0 CSR array= ",indxlen)
+    datalen = indxlen = int((len(ret[out])-1)/2)
+    print(ret[out][0:datalen])
+    print("Total length of %s CSR array: " % name,len(ret[out]))
+    print("\nNon-zero entries in %s = " % name,datalen)
+    print("\nindices in %s CSR array= " % name,indxlen)
     print("Original uncompressed length was: ",original_len)
     
     # Check xml catalog outputs
-    print(ret[5].tobytes(),len(ret[5]))
+    print("\n",ret[5].tobytes(),len(ret[5]))
