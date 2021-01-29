@@ -210,14 +210,14 @@ if __name__ == "__main__":
     
     print("With code %d\n" % ret[0])
 
-    # Check array outputs    
+    # Check array outputs - this example looks at the moment0 array   
     np.set_printoptions(threshold=np.inf)
     # the original uncompressed size is the last value of the array
     original_len = int(ret[2][-1])
     # The actual (non-zero) data is in the 1st half of the array
     datalen = indxlen = int((len(ret[2])-1)/2)
     print(ret[2][0:datalen])
-    print("Length moment0 CSR array: ",len(ret[2])-1)
+    print("Total length of moment0 CSR array: ",len(ret[2]))
     print("\nNon-zero entries in moment0 = ",datalen)
     print("\nindices in moment0 CSR array= ",indxlen)
     print("Original uncompressed length was: ",original_len)

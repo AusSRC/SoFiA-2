@@ -6237,8 +6237,7 @@ PRIVATE size_t DataCube_sparseFloatCsr(const DataCube *self, float **dataPtr)
 	}
 	// Add the size of the original array as the last value of the csr_array
 	*indices = (float)self->data_size;
-
-	return count*2;
+	return count*2+1;
 
 }
 
@@ -6260,7 +6259,7 @@ PRIVATE size_t DataCube_sparseIntCsr(const DataCube *self, int **dataPtr)
 	// Add the size of the original array as the last value of the csr_array
 	*indices = (int)self->data_size;
 
-	return count*2;
+	return count*2+1;
 
 }
 // ----------------------------------------------------------------- //
