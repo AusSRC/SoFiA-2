@@ -189,6 +189,9 @@ PRIVATE        double DataCube_get_beam_area   (const DataCube *self);
 PRIVATE        void   DataCube_get_wcs_info    (const DataCube *self, String **unit_flux_dens, String **unit_flux, String **label_lon, String **label_lat, String **label_spec, String **ucd_lon, String **ucd_lat, String **ucd_spec, String **unit_lon, String **unit_lat, String **unit_spec, double *beam_area, double *chan_size);
 PRIVATE        void   DataCube_create_src_name (const DataCube *self, String **source_name, const char *prefix, const double longitude, const double latitude, const String *label_lon);
 PRIVATE        void   DataCube_swap_byte_order (const DataCube *self);
+PRIVATE        size_t DataCube_countNonZeros   (const DataCube *self);
+PRIVATE        size_t DataCube_sparseFloatCsr  (const DataCube *self, float **dataPtr);
+PRIVATE        size_t DataCube_sparseIntCsr    (const DataCube *self, int **dataPtr);
 
 // TEST
 PUBLIC void DataCube_continuum_flagging(DataCube *self, const char *filename, const int coord_system, const long int radius);

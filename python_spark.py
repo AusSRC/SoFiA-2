@@ -93,6 +93,48 @@ def dict2FITSstr(hdr_dict):
     hdrsize += pad
     return my_str,hdrsize
 
+def getValCsr(csr_array,xcoord):
+    ''' This function returns the array's value at the original (non-CSR) index.
+        The "CSR" array is in two halves - 1st half is the non-zero data (either float or int)
+        and the 2nd half is the index of the corresponding data in the original array.
+        
+        There is also an additional final value, which is the size of the original (non-csr) array 
+        
+    '''
+    
+    start_indx = int((len(csr_array)-1)/2)
+    end_indx = int(len(csr_array))-2
+    data = csr_array[0:start_indx-1]
+    indices = int(csr_array[start_indx:end_indx])
+    
+    csr_coord = np.where(indices==xcoord)
+    if csr_coord[0].size == 0:
+        return 0
+    else:
+        return data[int(csr_coord[0])]
+    
+def decompressCsr(csr_array):
+    ''' Reconstruct the original non-csr array.
+        NOTE!! - this can return a VERY large array !!
+        
+        The "CSR" array is in two halves - 1st half is the non-zero data (either float or int)
+        and the 2nd half is the index of the corresponding data in the original array.
+        There is also an additional final value, which is the size of the original (non-csr) array 
+    '''
+    original_size = csr_array[-1]
+    original = np.zeros(original_size)
+    
+    start_indx = int((len(csr_array)-1)/2)
+    end_indx = int(len(csr_array))-2
+    data = csr_array[0:start_indx-1]
+    indices = int(csr_array[start_indx:end_indx])
+    
+    for indx,i in np.ndenumerate(indices):
+        original[int(i)] = data[int(indx[0])]
+        
+    return original
+    
+
 def usage():
     print("Usage: python3 python_spark.py <path-to-FITS-file> <path-to-parameter-file>")
 
@@ -151,7 +193,14 @@ if __name__ == "__main__":
     # The returned object from the call to sofia_mainline has the following structure:
     # ret[0] - the return code (normally 0)
     #
-    # ret[1] - the 'channels' output array of ints
+    # The arrays ret[1] to ret[4] are a form of Compressed Sparse Row format - all non-zero
+    # values have been removed. The array is then composed of 2 'halves' plus one final value. 
+    # The first half lists all the non-zero values. 
+    # The second half lists all the indices of the non-zero values, so that the original array can be reconstructed.i
+    # The final value is the size of the original (uncompressed) array (needed to reconstruct the original) 
+    # On typical SoFiA outputs, this reduces the size of the output arrays by 2 ~ 3 orders of magnitude!
+    #
+    # ret[1] - the 'channels' output array of ints, 
     # ret[2] - the 'moment0' output array of floats
     # ret[3] - the 'moment1' output array of floats
     # ret[4] - the 'moment2' output array of floats
@@ -163,6 +212,15 @@ if __name__ == "__main__":
 
     # Check array outputs    
     np.set_printoptions(threshold=np.inf)
-    print(ret[1],len(ret[1]))
+    # the original uncompressed size is the last value of the array
+    original_len = int(ret[2][-1])
+    # The actual (non-zero) data is in the 1st half of the array
+    datalen = indxlen = int((len(ret[2])-1)/2)
+    print(ret[2][0:datalen])
+    print("Length moment0 CSR array: ",len(ret[2])-1)
+    print("\nNon-zero entries in moment0 = ",datalen)
+    print("\nindices in moment0 CSR array= ",indxlen)
+    print("Original uncompressed length was: ",original_len)
+    
     # Check xml catalog outputs
     print(ret[5].tobytes(),len(ret[5]))

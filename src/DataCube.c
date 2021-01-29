@@ -6189,9 +6189,8 @@ PUBLIC size_t DataCube_writeMemFloat(const DataCube *self, float **memPtr, char 
 			memsize = len;
 		}
 	}
-	memcpy(*memPtr,self->data,len);
-
-	return self->data_size;
+	memsize = DataCube_sparseFloatCsr(self,memPtr);
+	return memsize;
 }
 
 PUBLIC size_t DataCube_writeMemInt(const DataCube *self, int **memPtr, char *reallocOK)
@@ -6207,10 +6206,63 @@ PUBLIC size_t DataCube_writeMemInt(const DataCube *self, int **memPtr, char *rea
 			memsize = len;
 		}
 	}
-	memcpy(*memPtr,self->data,len);
-	return self->data_size;
+	memsize = DataCube_sparseIntCsr(self,memPtr);
+	return memsize;
 }
 
+
+PRIVATE size_t DataCube_countNonZeros(const DataCube *self)
+{
+	size_t count = 0;
+	for (size_t i =0; i < self->data_size;i++){
+		if (self->data[i] != 0) count++;
+	}
+	return count;
+}
+
+PRIVATE size_t DataCube_sparseFloatCsr(const DataCube *self, float **dataPtr)
+{
+	size_t count = DataCube_countNonZeros(self);
+	*dataPtr = malloc(1+sizeof(float)*count*2);
+	float *data = *dataPtr;
+	float *indices = *dataPtr+count;
+	for (size_t i =0; i < self->data_size;i++){
+		if (self->data[i] != 0){
+			*data = self->data[i];
+			++data;
+			*indices = i;
+			++indices;
+
+		}
+	}
+	// Add the size of the original array as the last value of the csr_array
+	*indices = (float)self->data_size;
+
+	return count*2;
+
+}
+
+PRIVATE size_t DataCube_sparseIntCsr(const DataCube *self, int **dataPtr)
+{
+	size_t count = DataCube_countNonZeros(self);
+	*dataPtr = malloc(1+sizeof(int)*count*2);
+	int *data = *dataPtr;
+	int *indices = *dataPtr+count;
+	for (size_t i =0; i < self->data_size;i++){
+		if (self->data[i] != 0){
+			*data = self->data[i];
+			++data;
+			*indices = i;
+			++indices;
+
+		}
+	}
+	// Add the size of the original array as the last value of the csr_array
+	*indices = (int)self->data_size;
+
+	return count*2;
+
+}
 // ----------------------------------------------------------------- //
 // Extract header info from in-mem array
 // ----------------------------------------------------------------- //
